@@ -175,17 +175,20 @@
     {
       "key": "cand_1",
       "name": "Candidate 1",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "cand_2",
       "name": "Candidate 2",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "cand_3",
       "name": "Candidate 3",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "note_1",
@@ -280,122 +283,146 @@
     {
       "key": "ring_1_1",
       "name": "Wheel C",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_2_1",
       "name": "Wheel G",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_3_1",
       "name": "Wheel D",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_4_1",
       "name": "Wheel A",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_5_1",
       "name": "Wheel E",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_6_1",
       "name": "Wheel B",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_7_1",
       "name": "Wheel F#",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_8_1",
       "name": "Wheel Db",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_9_1",
       "name": "Wheel Ab",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_10_1",
       "name": "Wheel Eb",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_11_1",
       "name": "Wheel Bb",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_12_1",
       "name": "Wheel F",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_13_1",
       "name": "Wheel Am",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_14_1",
       "name": "Wheel Em",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_15_1",
       "name": "Wheel Bm",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_16_1",
       "name": "Wheel F#m",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_17_1",
       "name": "Wheel C#m",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_18_1",
       "name": "Wheel G#m",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_19_1",
       "name": "Wheel Ebm",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_20_1",
       "name": "Wheel Bbm",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_21_1",
       "name": "Wheel Fm",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_22_1",
       "name": "Wheel Cm",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_23_1",
       "name": "Wheel Gm",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     },
     {
       "key": "ring_24_1",
       "name": "Wheel Dm",
-      "display": "string"
+      "display": "string",
+      "momentary": true
     }
   ]
 }
