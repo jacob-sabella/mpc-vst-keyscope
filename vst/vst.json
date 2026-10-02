@@ -1,0 +1,25 @@
+{
+  "name": "Keyscope",
+  "vendor": "jacob-sabella",
+  "uid": "KySc",
+  "version": 1000,
+  "so": "keyscope.so",
+  "effect": true,
+  "params": "params.json",
+  "layout": "layout.conf",
+  "art": "html",
+  "build": {
+    "root": "..",
+    "sources": [
+      "src/keyscope.c",
+      "src/analyzer.c"
+    ],
+    "cflags": [
+      "-Isrc"
+    ],
+    "libs": [
+      "-lm",
+      "-lpthread"
+    ]
+  }
+}

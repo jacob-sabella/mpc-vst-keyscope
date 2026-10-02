@@ -1,0 +1,11 @@
+:root { --title-size: 26px; --label-size: 22px; --seg-size: 19px; --button-size: 21px; }
+
+/* a scope screen: amber titles, teal frame lines, a faint glow on both */
+.td3 .frame-title { fill: var(--accent-hi); filter: drop-shadow(0 0 5px rgba(255, 181, 71, 0.55)); }
+.td3 .frame-border { filter: drop-shadow(0 0 4px rgba(75, 227, 181, 0.35)); }
+.frame-rule { stroke: #4be3b5; stroke-opacity: 0.35; }
+.knob-arc, .knob-pointer { filter: drop-shadow(0 0 4px rgba(255, 181, 71, 0.8)); }
+.knob-track { filter: drop-shadow(0 0 3px rgba(75, 227, 181, 0.5)); }
+.on .pill-thumb { filter: drop-shadow(0 0 6px rgba(255, 181, 71, 0.9)); }
+.button-bg { filter: drop-shadow(0 0 6px rgba(255, 181, 71, 0.5)); }
+.arrow { fill: #ffb547; }

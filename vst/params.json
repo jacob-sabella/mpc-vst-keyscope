@@ -1,0 +1,281 @@
+{
+  "name": "Keyscope",
+  "params": [
+    {
+      "key": "lock",
+      "name": "Key",
+      "options": [
+        "Auto",
+        "C Major",
+        "Db Major",
+        "D Major",
+        "Eb Major",
+        "E Major",
+        "F Major",
+        "F# Major",
+        "G Major",
+        "Ab Major",
+        "A Major",
+        "Bb Major",
+        "B Major",
+        "C Minor",
+        "C# Minor",
+        "D Minor",
+        "Eb Minor",
+        "E Minor",
+        "F Minor",
+        "F# Minor",
+        "G Minor",
+        "G# Minor",
+        "A Minor",
+        "Bb Minor",
+        "B Minor"
+      ],
+      "default": 0
+    },
+    {
+      "key": "memory",
+      "name": "Memory",
+      "options": [
+        "10 s",
+        "30 s",
+        "1 min",
+        "Song"
+      ],
+      "default": 1
+    },
+    {
+      "key": "profile",
+      "name": "Profile",
+      "options": [
+        "Krumhansl",
+        "Temperley",
+        "Simple"
+      ],
+      "default": 0
+    },
+    {
+      "key": "range",
+      "name": "Range",
+      "options": [
+        "Full",
+        "Bass",
+        "Mids",
+        "Highs"
+      ],
+      "default": 0
+    },
+    {
+      "key": "chords",
+      "name": "Chords",
+      "options": [
+        "Triads",
+        "+ 7ths"
+      ],
+      "default": 0
+    },
+    {
+      "key": "tuning",
+      "name": "Tuning",
+      "options": [
+        "Auto",
+        "A = 440"
+      ],
+      "default": 0
+    },
+    {
+      "key": "notation",
+      "name": "Notation",
+      "options": [
+        "Auto",
+        "Sharps",
+        "Flats"
+      ],
+      "default": 0
+    },
+    {
+      "key": "gate",
+      "name": "Gate",
+      "min": -80,
+      "max": -20,
+      "default": -55,
+      "display": "int",
+      "unit": "dB"
+    },
+    {
+      "key": "hold",
+      "name": "Hold",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "reset",
+      "name": "Reset",
+      "min": 0,
+      "max": 1,
+      "momentary": true
+    },
+    {
+      "key": "key_name",
+      "name": "Key Name",
+      "display": "string",
+      "type": "readout"
+    },
+    {
+      "key": "key_info",
+      "name": "Key Info",
+      "display": "string",
+      "type": "readout"
+    },
+    {
+      "key": "scale_notes",
+      "name": "Scale Notes",
+      "display": "string",
+      "type": "readout"
+    },
+    {
+      "key": "chord",
+      "name": "Chord",
+      "display": "string",
+      "type": "readout"
+    },
+    {
+      "key": "trail",
+      "name": "Chord Trail",
+      "display": "string",
+      "type": "readout"
+    },
+    {
+      "key": "tuning_read",
+      "name": "Tuning Readout",
+      "display": "string",
+      "type": "readout"
+    },
+    {
+      "key": "loudest",
+      "name": "Loudest Note",
+      "display": "string",
+      "type": "readout"
+    },
+    {
+      "key": "outside",
+      "name": "Outside The Key",
+      "display": "string",
+      "type": "readout"
+    },
+    {
+      "key": "status",
+      "name": "Status",
+      "display": "string",
+      "type": "readout"
+    },
+    {
+      "key": "cand_1",
+      "name": "Candidate 1",
+      "display": "string"
+    },
+    {
+      "key": "cand_2",
+      "name": "Candidate 2",
+      "display": "string"
+    },
+    {
+      "key": "cand_3",
+      "name": "Candidate 3",
+      "display": "string"
+    },
+    {
+      "key": "note_1",
+      "name": "Note 1",
+      "display": "string"
+    },
+    {
+      "key": "note_2",
+      "name": "Note 2",
+      "display": "string"
+    },
+    {
+      "key": "note_3",
+      "name": "Note 3",
+      "display": "string"
+    },
+    {
+      "key": "note_4",
+      "name": "Note 4",
+      "display": "string"
+    },
+    {
+      "key": "note_5",
+      "name": "Note 5",
+      "display": "string"
+    },
+    {
+      "key": "note_6",
+      "name": "Note 6",
+      "display": "string"
+    },
+    {
+      "key": "note_7",
+      "name": "Note 7",
+      "display": "string"
+    },
+    {
+      "key": "note_8",
+      "name": "Note 8",
+      "display": "string"
+    },
+    {
+      "key": "note_9",
+      "name": "Note 9",
+      "display": "string"
+    },
+    {
+      "key": "note_10",
+      "name": "Note 10",
+      "display": "string"
+    },
+    {
+      "key": "note_11",
+      "name": "Note 11",
+      "display": "string"
+    },
+    {
+      "key": "note_12",
+      "name": "Note 12",
+      "display": "string"
+    },
+    {
+      "key": "log_1",
+      "name": "Key Change 1",
+      "display": "string"
+    },
+    {
+      "key": "log_2",
+      "name": "Key Change 2",
+      "display": "string"
+    },
+    {
+      "key": "log_3",
+      "name": "Key Change 3",
+      "display": "string"
+    },
+    {
+      "key": "log_4",
+      "name": "Key Change 4",
+      "display": "string"
+    },
+    {
+      "key": "log_5",
+      "name": "Key Change 5",
+      "display": "string"
+    },
+    {
+      "key": "log_6",
+      "name": "Key Change 6",
+      "display": "string"
+    }
+  ]
+}
