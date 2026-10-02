@@ -67,11 +67,11 @@ backgrounds as SVG (`vst/art/wheel.svg`, `vst/art/scene.svg`); the wheel's geome
 Needs Docker (QEMU for arm32v7) and an mpc-vst-plugins checkout next to this repo (or `MPC_VST=<path>`):
 
 ```sh
-vst/test.sh     # offline, x86, ASan/UBSan: detectors on synthesized audio, the engine, the wrapper host test
+vst/test.sh     # offline, x86, sanitizers: detectors, engine, settings, bad input, real time, the wrapper host test
 vst/build.sh    # vst/build/keyscope.so, the skin, the plugin-list entry
 ```
 
-`tests/analyzer_test.c` synthesizes chord progressions in all 24 keys, clean, with drums and noise, and a band
+See TESTING.md for every test and the on-device checklist. `tests/analyzer_test.c` synthesizes chord progressions in all 24 keys, clean, with drums and noise, and a band
 35 cents flat, and checks the key under every profile, plus chords, sevenths, a slash chord, tuning, a key change,
 the gate and RESET. `tests/engine_test.c` drives the plugin's own entry points (process, the worker thread, every
 readout, the candidate tiles, KEY LOCK, HOLD, RESET and the saved state).
