@@ -32,6 +32,7 @@ static const struct { const char *key; int min, max, def; } PDEF[NUM_P] = {
     {"hold", 0, 1, 0},
 };
 #define NUM_CAND 3
+#define NUM_RING 24   /* the circle of fifths: ring_1..12 the major keys clockwise from C, ring_13..24 their relative minors */
 #define TEXT_MAX 47   /* the wrapper shows a readout's first 47 characters */
 
 typedef struct {   /* what the screen shows: a copy of the analyser's results */
@@ -192,6 +193,27 @@ static void chord_text(ks_chord_t c, int flats, char *buf, int len) {
 
 static int pct(float r) { return clampi((int)lroundf(r * 100.0f), 0, 100); }
 
+/* ring tile t (0-23) -> its key: outer tile i is the major key i fifths above C, inner tile i its relative minor */
+static int ring_key(int t) {
+    int root = (t % 12) * 7 % 12;
+    return t < 12 ? root : 12 + (root + 9) % 12;
+}
+
+/* a key's place on the circle: its relative major's number of fifths above C */
+static int ring_pos(int key) {
+    int major = KEY_MINOR(key) ? (KEY_ROOT(key) + 3) % 12 : KEY_ROOT(key);
+    return major * 7 % 12;
+}
+
+/* MPC draws a tile's text left-aligned (24 px Titillium Web, 12 px in from each side); on the wheel it should sit
+ * in the middle, so lead it with spaces. Widths are rough advances at that size. */
+static int centred(char *buf, int len, const char *text, int area) {
+    float w = 0;
+    for (const char *c = text; *c; c++) w += *c == 'm' ? 21.0f : *c == '#' || *c == 'b' ? 13.0f : 14.0f;
+    int pad = clampi((int)lroundf((area - w) / 2.0f / 5.5f), 0, 12);
+    return snprintf(buf, len, "%*s%s", pad, "", text);
+}
+
 static int index_of(const char *key, const char *prefix, const char *suffix, int max) {
     size_t pl = strlen(prefix);
     int n = 0, used = 0;
@@ -235,6 +257,11 @@ static void set_param(void *inst, const char *key, const char *val) {
         if (key2 < 0) return;
         atomic_store(&s->p[P_LOCK], atomic_load(&s->p[P_LOCK]) == key2 + 1 ? 0 : key2 + 1);
     }
+    else if ((c = index_of(key, "ring_", "_1", NUM_RING)) >= 0) {   /* a tap on the wheel locks to that key; again unlocks */
+        if (atof(val) <= 0.5) return;
+        int key2 = ring_key(c);
+        atomic_store(&s->p[P_LOCK], atomic_load(&s->p[P_LOCK]) == key2 + 1 ? 0 : key2 + 1);
+    }
     else if (!strcmp(key, "state")) load_state(s, val);
 }
 
@@ -253,7 +280,7 @@ static int get_param(void *inst, const char *key, char *buf, int len) {
 
     if (!strcmp(key, "key_name")) {
         if (key0 >= 0) return snprintf(buf, len, "%s", ks_key_name(key0));
-        return snprintf(buf, len, v.has_audio ? "LISTENING..." : "PLAY SOMETHING");
+        return snprintf(buf, len, v.has_audio ? "LISTENING..." : "NO KEY YET");
     }
     if (!strcmp(key, "key_info")) {
         if (key0 < 0) return snprintf(buf, len, "-");
@@ -320,6 +347,17 @@ static int get_param(void *inst, const char *key, char *buf, int len) {
         float mx = 0;
         for (int p = 0; p < 12; p++) mx = fmaxf(mx, v.fast[p]);
         return snprintf(buf, len, "%d", v.voiced_now && mx > 0 && v.fast[n] >= 0.5f * mx);
+    }
+    if ((n = index_of(key, "ring_", "_1", NUM_RING)) >= 0) {
+        int k = ring_key(n);
+        char name[8];
+        snprintf(name, sizeof name, "%s%s", ks_pc_name(KEY_ROOT(k), flats_for(s, k)), KEY_MINOR(k) ? "m" : "");
+        return centred(buf, len, name, n < 12 ? 96 - 24 : 76 - 24);   /* the tile widths in vst/layout.conf */
+    }
+    if ((n = index_of(key, "ring_", "_1_on", NUM_RING)) >= 0) {   /* lit: the key's six chords, I IV V and ii iii vi */
+        if (key0 < 0) return snprintf(buf, len, "0");
+        int d = ((n % 12) - ring_pos(key0) + 12) % 12;
+        return snprintf(buf, len, "%d", d <= 1 || d == 11);
     }
     if ((n = index_of(key, "log_", "", KS_LOG)) >= 0) {   /* newest first */
         if (n >= v.nlog) return snprintf(buf, len, " ");

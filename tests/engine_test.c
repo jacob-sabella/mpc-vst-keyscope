@@ -51,7 +51,7 @@ int main(void) {
     CHECK(E->process != NULL, "an effect provides process()");
     void *a = E->create(NULL), *b = E->create(NULL);
     int differs = 0;
-    CHECK(!strcmp(get(a, "key_name"), "PLAY SOMETHING"), "fresh: %s", get(a, "key_name"));
+    CHECK(!strcmp(get(a, "key_name"), "NO KEY YET"), "fresh: %s", get(a, "key_name"));
 
     /* G major: G D Em C, twice, with roots in the bass */
     static const int G[] = {43, 67, 71, 74}, D[] = {38, 66, 69, 74}, Em[] = {40, 67, 71, 76}, C[] = {36, 67, 72, 76};
@@ -79,7 +79,7 @@ int main(void) {
           "tuning within a cent of 440: %s", get(a, "tuning_read"));
     CHECK(strstr(get(a, "loudest"), "LOUDEST NOTE: ") == get(a, "loudest"), "loudest: %s", get(a, "loudest"));
     CHECK(strstr(get(a, "status"), "LISTENING") == get(a, "status"), "status: %s", get(a, "status"));
-    CHECK(!strcmp(get(b, "key_name"), "PLAY SOMETHING"), "instance b heard nothing");
+    CHECK(!strcmp(get(b, "key_name"), "NO KEY YET"), "instance b heard nothing");
 
     /* a chord outside the key */
     static const int Bb[] = {46, 70, 74, 77};
@@ -99,6 +99,24 @@ int main(void) {
     CHECK(!strcmp(get(a, "cand_2_on"), "1"), "the locked candidate is lit");
     E->set_param(a, "cand_2", "1");
     CHECK(!strcmp(get(a, "lock"), "0") && !strcmp(get(a, "key_name"), "G Major"), "tapped again: back to %s", get(a, "key_name"));
+
+    /* the circle of fifths: G major lights C G D and Am Em Bm; a tap on the wheel locks, again unlocks */
+    static const char *ring_text[][2] = {{"ring_1_1", "C"}, {"ring_2_1", "G"}, {"ring_7_1", "F#"}, {"ring_8_1", "Db"},
+                                         {"ring_12_1", "F"}, {"ring_13_1", "Am"}, {"ring_19_1", "Ebm"}, {"ring_24_1", "Dm"}};
+    for (size_t r = 0; r < sizeof ring_text / sizeof ring_text[0]; r++)
+        CHECK(!strcmp(get(a, ring_text[r][0]) + strspn(get(a, ring_text[r][0]), " "), ring_text[r][1]), "%s: %s", ring_text[r][0], get(a, ring_text[r][0]));
+    char lit[32] = "";
+    for (int r = 1; r <= 24; r++) {
+        char k[24];
+        snprintf(k, sizeof k, "ring_%d_1_on", r);
+        if (!strcmp(get(a, k), "1")) snprintf(lit + strlen(lit), sizeof lit - strlen(lit), "%d ", r);
+    }
+    CHECK(!strcmp(lit, "1 2 3 13 14 15 "), "G major lights: %s", lit);
+    E->set_param(a, "ring_22_1", "1");
+    CHECK(!strcmp(get(a, "key_name"), "C Minor") && !strcmp(get(a, "ring_10_1_on"), "1") && !strcmp(get(a, "ring_2_1_on"), "0"),
+          "wheel tap locks: %s", get(a, "key_name"));
+    E->set_param(a, "ring_22_1", "1");
+    CHECK(!strcmp(get(a, "lock"), "0") && !strcmp(get(a, "key_name"), "G Major"), "wheel tap again: back to %s", get(a, "key_name"));
 
     /* state round trip */
     E->set_param(a, "memory", "3");
@@ -120,7 +138,7 @@ int main(void) {
     E->set_param(a, "reset", "1");
     static const int quiet[] = {60};
     play(a, quiet, 1, 0.5f, 0.00001f, &differs);
-    CHECK(!strcmp(get(a, "key_name"), "PLAY SOMETHING") && !strcmp(get(a, "trail"), "CHORDS: -"), "reset: %s / %s", get(a, "key_name"), get(a, "trail"));
+    CHECK(!strcmp(get(a, "key_name"), "NO KEY YET") && !strcmp(get(a, "trail"), "CHORDS: -"), "reset: %s / %s", get(a, "key_name"), get(a, "trail"));
     CHECK(strstr(get(a, "status"), "TOO QUIET") == get(a, "status"), "quiet: %s", get(a, "status"));
 
     E->destroy(a);

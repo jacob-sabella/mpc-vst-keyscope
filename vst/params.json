@@ -276,6 +276,126 @@
       "key": "log_6",
       "name": "Key Change 6",
       "display": "string"
+    },
+    {
+      "key": "ring_1_1",
+      "name": "Wheel C",
+      "display": "string"
+    },
+    {
+      "key": "ring_2_1",
+      "name": "Wheel G",
+      "display": "string"
+    },
+    {
+      "key": "ring_3_1",
+      "name": "Wheel D",
+      "display": "string"
+    },
+    {
+      "key": "ring_4_1",
+      "name": "Wheel A",
+      "display": "string"
+    },
+    {
+      "key": "ring_5_1",
+      "name": "Wheel E",
+      "display": "string"
+    },
+    {
+      "key": "ring_6_1",
+      "name": "Wheel B",
+      "display": "string"
+    },
+    {
+      "key": "ring_7_1",
+      "name": "Wheel F#",
+      "display": "string"
+    },
+    {
+      "key": "ring_8_1",
+      "name": "Wheel Db",
+      "display": "string"
+    },
+    {
+      "key": "ring_9_1",
+      "name": "Wheel Ab",
+      "display": "string"
+    },
+    {
+      "key": "ring_10_1",
+      "name": "Wheel Eb",
+      "display": "string"
+    },
+    {
+      "key": "ring_11_1",
+      "name": "Wheel Bb",
+      "display": "string"
+    },
+    {
+      "key": "ring_12_1",
+      "name": "Wheel F",
+      "display": "string"
+    },
+    {
+      "key": "ring_13_1",
+      "name": "Wheel Am",
+      "display": "string"
+    },
+    {
+      "key": "ring_14_1",
+      "name": "Wheel Em",
+      "display": "string"
+    },
+    {
+      "key": "ring_15_1",
+      "name": "Wheel Bm",
+      "display": "string"
+    },
+    {
+      "key": "ring_16_1",
+      "name": "Wheel F#m",
+      "display": "string"
+    },
+    {
+      "key": "ring_17_1",
+      "name": "Wheel C#m",
+      "display": "string"
+    },
+    {
+      "key": "ring_18_1",
+      "name": "Wheel G#m",
+      "display": "string"
+    },
+    {
+      "key": "ring_19_1",
+      "name": "Wheel Ebm",
+      "display": "string"
+    },
+    {
+      "key": "ring_20_1",
+      "name": "Wheel Bbm",
+      "display": "string"
+    },
+    {
+      "key": "ring_21_1",
+      "name": "Wheel Fm",
+      "display": "string"
+    },
+    {
+      "key": "ring_22_1",
+      "name": "Wheel Cm",
+      "display": "string"
+    },
+    {
+      "key": "ring_23_1",
+      "name": "Wheel Gm",
+      "display": "string"
+    },
+    {
+      "key": "ring_24_1",
+      "name": "Wheel Dm",
+      "display": "string"
     }
   ]
 }
