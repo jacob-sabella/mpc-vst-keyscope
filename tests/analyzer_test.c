@@ -261,6 +261,8 @@ int main(int argc, char **argv) {
     /* spelling helpers */
     CHECK(ks_key_uses_flats(5) && ks_key_uses_flats(2 + 12) && !ks_key_uses_flats(7) && !ks_key_uses_flats(4 + 12),
           "F major and D minor use flats, G major and E minor sharps");
+    CHECK(ks_key_uses_flats(3 + 12) && !ks_key_uses_flats(6) && !ks_key_uses_flats(1 + 12),
+          "Eb minor is spelled with flats like its name; F# major and C# minor with sharps");
     CHECK(ks_relative(0) == 21 && ks_relative(21) == 0, "C major and A minor are relatives");
     CHECK(ks_in_key(21, 7) && ks_in_key(21, 8) && !ks_in_key(21, 1), "A minor: G and G# in key, C# not");
 

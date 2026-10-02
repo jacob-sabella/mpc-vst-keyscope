@@ -67,7 +67,8 @@ float ks_seconds(long frames) { return (float)frames * KS_HOP / KS_FS; }
 int ks_key_uses_flats(int key) {
     if (key < 0) return 0;
     int major = KEY_MINOR(key) ? (KEY_ROOT(key) + 3) % 12 : KEY_ROOT(key);   /* the relative major's signature */
-    return major == 5 || major == 10 || major == 3 || major == 8 || major == 1;   /* F Bb Eb Ab Db */
+    /* F Bb Eb Ab Db, and Eb minor (named so, not D# minor; its relative is F# major, spelled with sharps) */
+    return major == 5 || major == 10 || major == 3 || major == 8 || major == 1 || (KEY_MINOR(key) && major == 6);
 }
 
 int ks_in_key(int key, int pc) {
