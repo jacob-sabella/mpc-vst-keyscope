@@ -243,7 +243,11 @@ static void load_state(inst_t *s, const char *st) {
 static void set_param(void *inst, const char *key, const char *val) {
     inst_t *s = inst;
     int i = find_param(key), c;
-    if (i >= 0) atomic_store(&s->p[i], clampi((int)lroundf((float)atof(val)), PDEF[i].min, PDEF[i].max));
+    if (i >= 0) {   /* clamped before rounding: "inf" or "1e30" would overflow the int; "nan" is the default */
+        double f = atof(val);
+        f = f != f ? PDEF[i].def : fmax(PDEF[i].min, fmin(PDEF[i].max, f));
+        atomic_store(&s->p[i], (int)lround(f));
+    }
     else if (!strcmp(key, "reset")) {
         if (atof(val) > 0.5) { atomic_store(&s->ring_clear, 1); atomic_store(&s->reset_req, 1); }
     }
