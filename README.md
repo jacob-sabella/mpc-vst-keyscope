@@ -26,7 +26,7 @@ MPC screen skin and Q-Links).
 ## How it works
 
 The input is mixed to mono, low-passed and decimated to 11 kHz. Every 46 ms a worker thread (never the audio
-thread) takes the last 371 ms, runs a 4096-point FFT, picks the spectral peaks and refines each one, and maps them
+thread) takes the last 371 ms, runs a 4096-point FFT, picks the spectral peaks (tones only: a click or a drum hit has none) and refines each one, and maps them
 to the twelve pitch classes relative to the estimated tuning (a peak a quarter tone off a note counts for
 nothing; a third or fifth harmonic of a stronger lower note is discounted as that note's colour). From that
 chromagram:

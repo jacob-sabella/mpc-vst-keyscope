@@ -21,6 +21,8 @@
 #define CHORD_MIN 0.80f        /* best template score under this: no new chord */
 #define CHORD_QUIET_S 0.4f     /* this long under the gate clears the chord */
 #define PEAK_FLOOR_DB -45.0f   /* peaks this far under the frame's strongest are ignored */
+#define PEAK_PROM 2.0f         /* a peak stands this far (6 dB) over the spectrum 3-4 bins out on both sides: a tone, not
+                                  * the ripple of a broadband sound (a click, a hit) */
 #define BASS_MAX_HZ 260.0f
 
 static const float RANGE_LO[RANGE_COUNT] = {50.0f, 40.0f, 120.0f, 400.0f};
@@ -198,11 +200,13 @@ static void find_peaks(ks_t *k) {
     if (mx <= 0) return;
     float floor_ = mx * powf(10.0f, PEAK_FLOOR_DB / 20.0f), binhz = (float)KS_FS / KS_N;
     int lo = (int)(30.0f / binhz), hi = (int)(5200.0f / binhz);
-    if (hi > nb - 3) hi = nb - 3;
-    if (lo < 3) lo = 3;
+    if (hi > nb - 5) hi = nb - 5;
+    if (lo < 5) lo = 5;
     for (int i = lo; i <= hi; i++) {
         float m = k->re[i];
         if (m < floor_ || m <= k->re[i - 1] || m < k->re[i + 1] || m <= k->re[i - 2] || m < k->re[i + 2]) continue;
+        float left = fminf(k->re[i - 3], k->re[i - 4]), right = fminf(k->re[i + 3], k->re[i + 4]);
+        if (m < PEAK_PROM * fmaxf(left, right)) continue;
         /* parabolic refinement on log magnitude */
         float a = logf(k->re[i - 1] + 1e-12f), b = logf(m + 1e-12f), c = logf(k->re[i + 1] + 1e-12f);
         float den = a - 2 * b + c, off = den != 0 ? 0.5f * (a - c) / den : 0;
