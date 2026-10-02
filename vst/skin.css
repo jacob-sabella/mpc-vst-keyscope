@@ -1,11 +1,17 @@
-:root { --title-size: 26px; --label-size: 22px; --seg-size: 19px; --button-size: 21px; }
+:root { --title-size: 26px; --label-size: 22px; --seg-size: 19px; --button-size: 21px; --sheen: 0.06; }
 
-/* a scope screen: amber titles, teal frame lines, a faint glow on both */
-.td3 .frame-title { fill: var(--accent-hi); filter: drop-shadow(0 0 5px rgba(255, 181, 71, 0.55)); }
-.td3 .frame-border { filter: drop-shadow(0 0 4px rgba(75, 227, 181, 0.35)); }
-.frame-rule { stroke: #4be3b5; stroke-opacity: 0.35; }
-.knob-arc, .knob-pointer { filter: drop-shadow(0 0 4px rgba(255, 181, 71, 0.8)); }
-.knob-track { filter: drop-shadow(0 0 3px rgba(75, 227, 181, 0.5)); }
-.on .pill-thumb { filter: drop-shadow(0 0 6px rgba(255, 181, 71, 0.9)); }
-.button-bg { filter: drop-shadow(0 0 6px rgba(255, 181, 71, 0.5)); }
-.arrow { fill: #ffb547; }
+/* synthwave: panels are smoked glass over the sunset, lines glow pink, titles glow like the sun */
+.td3 .frame-border { fill: rgba(12, 5, 34, 0.74); stroke: #ff7ae6; stroke-opacity: 0.85;
+                     filter: drop-shadow(0 0 5px rgba(255, 122, 230, 0.55)); }
+.td3 .frame-title { fill: var(--accent-hi); filter: drop-shadow(0 0 6px rgba(255, 140, 60, 0.75)); }
+.frame-rule { stroke: #ff7ae6; stroke-opacity: 0.3; }
+.box { fill: rgba(9, 3, 26, 0.82); stroke: #b03cff; stroke-opacity: 0.9; }
+.box-label { fill: #ffc3f4; }
+.tile { fill-opacity: 0.84; }
+.tile-border { filter: drop-shadow(0 0 5px rgba(255, 46, 136, 0.8)); }
+.knob-arc, .knob-pointer { filter: drop-shadow(0 0 5px rgba(255, 160, 64, 0.85)); }
+.knob-track { filter: drop-shadow(0 0 4px rgba(176, 60, 255, 0.7)); }
+.on .pill-thumb { filter: drop-shadow(0 0 7px rgba(255, 160, 64, 0.95)); }
+.button-bg { filter: drop-shadow(0 0 8px rgba(255, 160, 64, 0.6)); }
+.seg-bg { fill-opacity: 0.9; }
+.arrow { fill: #ffa040; }
