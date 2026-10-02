@@ -42,7 +42,7 @@ typedef struct {
     const char *suffix;
     int n, iv[4];
     float bias;     /* score multiplier: simpler chords win a near tie */
-    int seventh;    /* only with CHORDS_SEVENTHS */
+    int seventh;    /* 1 + the triad it is named as without CHORDS_SEVENTHS (0: not a seventh chord) */
 } ks_chord_type_t;
 
 extern const ks_chord_type_t ks_chord_types[];

@@ -47,8 +47,8 @@ const ks_chord_type_t ks_chord_types[] = {
     {"5", 2, {0, 7, 0, 0}, 0.90f, 0},
     {"7", 4, {0, 4, 7, 10}, 0.98f, 1},
     {"maj7", 4, {0, 4, 7, 11}, 0.98f, 1},
-    {"m7", 4, {0, 3, 7, 10}, 0.98f, 1},
-    {"m7b5", 4, {0, 3, 6, 10}, 0.96f, 1},
+    {"m7", 4, {0, 3, 7, 10}, 0.98f, 2},
+    {"m7b5", 4, {0, 3, 6, 10}, 0.96f, 3},
 };
 const int ks_num_chord_types = sizeof ks_chord_types / sizeof ks_chord_types[0];
 
@@ -322,12 +322,14 @@ static void detect_chord(ks_t *k) {
         float best = 0, nrm = sqrtf(n2);
         for (int t = 0; t < ks_num_chord_types; t++) {
             const ks_chord_type_t *ct = &ks_chord_types[t];
-            if (ct->seventh && k->chords != CHORDS_SEVENTHS) continue;
+            /* without CHORDS_SEVENTHS a seventh chord still matches (a G7 is far from every plain triad), named
+             * as its triad */
+            int shown = ct->seventh && k->chords != CHORDS_SEVENTHS ? ct->seventh - 1 : t;
             for (int r = 0; r < 12; r++) {
                 float dot = 0;
                 for (int i = 0; i < ct->n; i++) dot += k->chord_chroma[(r + ct->iv[i]) % 12];
                 float s = dot / (nrm * sqrtf((float)ct->n)) * ct->bias;
-                if (s > best) { best = s; c.root = r; c.type = t; }
+                if (s > best) { best = s; c.root = r; c.type = shown; }
             }
         }
         if (best < CHORD_MIN) return;   /* nothing clear (a chord fading under drums): keep what is shown */
