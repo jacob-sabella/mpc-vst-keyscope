@@ -9,9 +9,11 @@ MPC screen skin and Q-Links).
 
 ## What it shows
 
-- **KEY**: the key heard so far, how well it matches (the correlation with the key profile, as a percentage), its
-  relative and its scale notes. Three candidates underneath; tap one to lock the key to it, tap it again to follow
-  the audio again. KEY LOCK picks any key outright.
+- **KEY**: a circle of fifths. The twelve major keys run round the outside a fifth apart, their relative minors
+  inside. The key heard lights its six chords (I, IV and V outside, ii, iii and vi inside), and its name and the
+  chord sounding now sit in the middle. Tap any key on the wheel to lock to it, tap it again to follow the audio.
+  Beside it: how well the key matches (the correlation with the key profile, as a percentage), its relative, its
+  scale notes and the three best candidates (tap one to lock to it too). KEY LOCK picks any key outright.
 - **SOUNDING NOW**: twelve note tiles; the ones sounding right now light up. A line says which of them are outside
   the key.
 - **CHORDS**: the chord heard now (major, minor, dim, aug, sus2, sus4, power chords, and with + 7THS the 7, maj7,
@@ -53,6 +55,12 @@ everything; RESET forgets everything heard.
 RANGE picks the band analysed: FULL (50 Hz to 5 kHz), BASS (40-300 Hz, for a bassline), MIDS (120 Hz to 2 kHz,
 keeps hi-hats and kick out), HIGHS (400 Hz to 5 kHz). NOTATION spells notes as the key does (AUTO), or always with
 sharps or flats.
+
+## Look
+
+A synthwave sunset: the wheel is drawn into a striped sun over a neon grid. `vst/art/gen.py` draws the page
+backgrounds as SVG (`vst/art/wheel.svg`, `vst/art/scene.svg`); the wheel's geometry there matches the ring tiles in
+`vst/layout.conf`. `vst/skin.css` styles the panels and controls.
 
 ## Building
 
