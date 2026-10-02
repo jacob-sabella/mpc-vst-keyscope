@@ -30,8 +30,9 @@ ssh_ "uname -m" | grep -q '^armv7' || { echo "$target is not a 32-bit ARM device
 ssh_ "rm -rf $dir && mkdir -p $dir"
 trap 'ssh_ "rm -rf $dir" || true' EXIT
 scp -q -o BatchMode=yes "$out"/*_test "$target:$dir/"
-# one shell on the device: every test runs even if one fails; the exit status says whether all passed
-ssh_ "cd $dir && rc=0 &&
+# one shell on the device, lowered to nice 19 with renice (MPC OS has no nice) so every test inherits it; every
+# test runs even if one fails, and the exit status says whether all passed
+ssh_ "cd $dir && renice -n 19 -p \$\$ >/dev/null && rc=0 &&
       for t in 'analyzer_test -q' engine_test settings_test robust_test rt_test; do
-          echo \"== \$t\"; nice -n 19 ./\$t || rc=1
+          echo \"== \$t\"; ./\$t || rc=1
       done; exit \$rc"
