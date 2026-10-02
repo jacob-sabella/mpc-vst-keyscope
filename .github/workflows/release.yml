@@ -1,0 +1,37 @@
+# Build Keyscope for MPC OS and attach the zip to a DRAFT release, with mpc-vst-plugins' reusable workflow
+# (its docs/RELEASING.md, "Releasing from CI"). mpc-vst-plugins is pinned to ONE commit in both places below.
+#
+# Until sd88me/mpc-vst-plugins#90 is merged, upstream lacks the skin and wrapper features this port uses
+# (lit list tiles, theme_tile_on, scale_names, 47-character readouts), so both pins name that PR's head: the
+# workflow from the fork, and tools_ref, which the workflow checks out from upstream (a PR's commits are
+# fetchable there). The host test also needs the "host_test: give an effect input buffers" fix (branch
+# host-test-effect on the fork) before CI can release an effect. Point both pins at upstream once both are in.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version for the zip and INSTALL.md, e.g. 0.3.0
+        required: true
+        type: string
+      dry_run:
+        description: Build and package only (zip and skin previews as run artifacts, no draft release)
+        type: boolean
+        default: false
+
+jobs:
+  vst:
+    uses: jacob-sabella/mpc-vst-plugins/.github/workflows/vst-release.yml@8bb7c49432b683da7a3aa537a1f479417cc27899
+    permissions: { contents: write }
+    with:
+      tag: keyscope-vst-v${{ inputs.version }}
+      version: ${{ inputs.version }}
+      tools_ref: 8bb7c49432b683da7a3aa537a1f479417cc27899
+      vst_dir: vst
+      build: vst/build.sh
+      host_test: vst/test.sh
+      about: "Listens to any track and names its key, chord, bass note and tuning, from the spectrum of the whole mix."
+      plugin_id: keyscope
+      license: MIT
+      dry_run: ${{ inputs.dry_run }}
