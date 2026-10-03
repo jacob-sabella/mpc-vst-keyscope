@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Keyscope's page backgrounds, drawn as SVG: a synthwave sunset (starry sky, a striped sun, a neon grid floor
-running to the horizon, mountains moving past) with the circle of fifths drawn into the sun on the KEY page.
+running to the horizon) with the circle of fifths drawn into the sun on the KEY page.
 
-    python3 vst/art/gen.py      # writes vst/art/wheel.svg and vst/art/scene.svg, and their animation frames
-                                # vst/art/wheel_1..16.svg and scene_1..16.svg (the mountain band only)
+    python3 vst/art/gen.py      # writes vst/art/wheel.svg and vst/art/scene.svg
 
 The plugin area is 1280 x 628; layout y = svg y + 84. The wheel's geometry must match the ring tiles in
 vst/layout.conf (WHEEL_* below are the same numbers)."""
@@ -11,9 +10,6 @@ import math, os, random
 
 W, H, Y_OFF = 1280, 628, 84
 HORIZON = 476                          # layout y 560
-BAND_Y0, BAND_Y1 = HORIZON - 160, HORIZON + 4   # animation frames: the mountains (layout y 400, height 164)
-N_FRAMES = 16                          # the engine's NUM_BG: bg_1..bg_16 show <page>_1..16.svg in turn
-FAR_STEP, NEAR_STEP = 10, 20           # px each ridge moves per frame; its period is N_FRAMES steps
 WHEEL_CX, WHEEL_CY = 330, 398 - Y_OFF  # layout (330, 398)
 R_OUT, R_IN = 250, 160                 # ring tile centres
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -69,31 +65,18 @@ def sun(cx, cy, r, opacity):
 <circle cx="{cx}" cy="{cy}" r="{r}" fill="url(#sun)" mask="url(#suncut{cx})" opacity="{opacity}"/>"""
 
 
-def ridge(seed, period, peak, shift, fill, glow):
-    """A mountain ridge that repeats every period px, moved left by shift: shift = period is the same picture
-    again, so the frames loop."""
+def mountains(x0, x1, seed, peak):
     rnd = random.Random(seed)
-    tile, x = [], 0.0
-    while True:   # peaks and valleys over one period, from a valley at x = 0 to the same valley at x = period
-        x += rnd.uniform(0.06, 0.14) * period
-        if x >= period - 0.06 * period:
-            break
-        tile.append((x, HORIZON - rnd.uniform(peak * 0.4, peak) if len(tile) % 2 == 0 else HORIZON - rnd.uniform(0, peak * 0.3)))
-    base = HORIZON - peak * 0.12
-    pts = [(-period, HORIZON)]
-    for t in range(-1, W // period + 2):
-        x0 = t * period - shift % period
-        pts += [(x0, base)] + [(x0 + dx, y) for dx, y in tile]
-    pts.append((pts[-1][0], HORIZON))
-    d = "M" + " L".join("%.1f,%.0f" % p_ for p_ in pts) + " Z"
-    return (f'<path d="{d}" fill="{fill}"/>'
-            f'<path d="{d}" fill="none" stroke="{PINK}" stroke-width="1.6" stroke-opacity="{glow}" filter="url(#glow)"/>')
-
-
-def mountains(frame):
-    """Two ridges, the far one moving half as fast (parallax): one step of each per animation frame."""
-    return "\n".join([ridge(11, N_FRAMES * FAR_STEP, 70, frame * FAR_STEP, "#1c0a4a", 0.35),
-                      ridge(4, N_FRAMES * NEAR_STEP, 140, frame * NEAR_STEP, "#12063a", 0.75)])
+    pts, x = [(x0, HORIZON)], x0
+    while x < x1:
+        x += rnd.uniform(40, 90)
+        pts.append((min(x, x1), HORIZON - rnd.uniform(peak * 0.35, peak)))
+        x += rnd.uniform(40, 90)
+        pts.append((min(x, x1), HORIZON - rnd.uniform(0, peak * 0.3)))
+    pts.append((x1, HORIZON))
+    d = "M" + " L".join("%.0f,%.0f" % p for p in pts) + " Z"
+    return (f'<path d="{d}" fill="#12063a"/>'
+            f'<path d="{d}" fill="none" stroke="{PINK}" stroke-width="1.6" stroke-opacity="0.75" filter="url(#glow)"/>')
 
 
 def floor():
@@ -136,19 +119,17 @@ def wheel():
     return "\n".join(out)
 
 
-def page(body, y0=0, y1=H):
-    """The page, or only its band y0..y1: an animation frame."""
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{y1 - y0}" viewBox="0 {y0} {W} {y1 - y0}">\n'
+def page(body):
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">\n'
             f'{defs()}\n{body}\n</svg>\n')
 
 
 def main():
-    wheel_page = lambda f: "\n".join([sky(5), sun(WHEEL_CX, WHEEL_CY, R_OUT + 36, 0.85), mountains(f), floor(), wheel()])
-    scene_page = lambda f: "\n".join([sky(9), sun(W // 2, HORIZON - 40, 210, 0.9), mountains(f), floor()])
-    for name, draw in (("wheel", wheel_page), ("scene", scene_page)):
-        open(os.path.join(HERE, name + ".svg"), "w").write(page(draw(0)))
-        for f in range(N_FRAMES):   # the mountain band, each ridge one step further left
-            open(os.path.join(HERE, "%s_%d.svg" % (name, f + 1)), "w").write(page(draw(f), BAND_Y0, BAND_Y1))
+    wheel_page = "\n".join([sky(5), sun(WHEEL_CX, WHEEL_CY, R_OUT + 36, 0.85), mountains(640, W, 3, 120), floor(), wheel()])
+    scene_page = "\n".join([sky(9), sun(W // 2, HORIZON - 40, 210, 0.9), mountains(0, 470, 4, 150), mountains(810, W, 6, 150),
+                            floor()])
+    for name, svg in (("wheel.svg", wheel_page), ("scene.svg", scene_page)):
+        open(os.path.join(HERE, name), "w").write(page(svg))
 
 
 if __name__ == "__main__":

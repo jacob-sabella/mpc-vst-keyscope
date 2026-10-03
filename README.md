@@ -27,7 +27,7 @@ driven from a script: [docs/keyscope.mp4](docs/keyscope.mp4) (with captions).
   m7 and m7b5 chords), with the bass note as a slash chord (C/E), and the chords before it.
 - **HISTORY**: every key change with the time since listening started, the chord trail, the tuning and the
   loudest note.
-- **SETUP**: MEMORY, PROFILE, RANGE, NOTATION, TUNING, CHORDS and GATE (below), and ANIMATION.
+- **SETUP**: MEMORY, PROFILE, RANGE, NOTATION, TUNING, CHORDS and GATE (below).
 - **Tuning**: where the music sits against A = 440 (a band tuned to 432 Hz reads -32 cents), followed when TUNING
   is AUTO so a detuned recording still lands on the right notes.
 
@@ -76,16 +76,10 @@ A synthwave sunset: the wheel is drawn into a striped sun over a neon grid. `vst
 backgrounds as SVG (`vst/art/wheel.svg`, `vst/art/scene.svg`); the wheel's geometry there matches the ring tiles in
 `vst/layout.conf`. `vst/skin.css` styles the panels and controls.
 
-With ANIMATION on (SETUP; off by default), two mountain ridges slide past behind it, the far one at half speed:
-sixteen frames of the mountain band (`vst/art/wheel_1..16.svg`, `scene_1..16.svg`), three a second, looping
-seamlessly. The engine lights one of the hidden `bg_1`..`bg_16` parameters at a time and the skin shows that frame's
-picture.
-
 ## Performance
 
-On an MPC Key 37 (mpc-vst-plugins' `tools/bench.sh`, `vst/bench.txt`): worst p99 5.3% of the 2.9 ms block, worst
-block 11%, the analysis thread about 1% of a core: PASS. Most of the audio-thread cost is the wrapper polling the
-lit tiles and the animation frames every 10 ms, not the analysis.
+On an MPC Key 37 (mpc-vst-plugins' `tools/bench.sh`, `vst/bench.txt`): worst p99 4.6% of the 2.9 ms block, worst
+block 8.4%, the analysis thread about 1% of a core: PASS.
 
 ## Building
 
@@ -94,7 +88,7 @@ Needs Docker (with QEMU for arm32v7) and a checkout of
 Until [mpc-vst-plugins#90](https://github.com/sd88me/mpc-vst-plugins/pull/90) is merged, use that pull
 request's branch (`qlink-travel` of [jacob-sabella/mpc-vst-plugins](https://github.com/jacob-sabella/mpc-vst-plugins)):
 Keyscope relies on its wrapper and skin changes (tiles lit from the engine, momentary tiles, 47-character readouts,
-`theme_tile_on`, `scale_names`, a picture's frames drawn under the panels). The wrapper's host test also needs the
+`theme_tile_on`, `scale_names`). The wrapper's host test also needs the
 fork's `host-test-effect` fix to run an effect.
 
 ```sh
@@ -103,8 +97,7 @@ vst/build.sh             # vst/build/keyscope.so, the skin and pluginlist-entry.
 tests/device.sh <host>   # the engine tests built for armv7 and run on a device over ssh (MPC is not touched)
 ```
 
-`TESTING.md` lists every test and the on-device checklist. `vst/art/gen.py` redraws the page backgrounds and the
-animation frames.
+`TESTING.md` lists every test and the on-device checklist. `vst/art/gen.py` redraws the page backgrounds.
 
 ### Releasing
 
@@ -128,7 +121,7 @@ The engine is plain C on mpc-vst-plugins' generic wrapper (`wrapper/engine.h`, `
   templates, the bass note and the key-change log. No allocation and no locks; tested on its own
   (`tests/analyzer_test.c`).
 - `src/keyscope.c`: the plugin: parameters and saved state, the audio thread (pass-through, decimation, a ring of
-  the last 371 ms), the worker thread that runs the analysis, every readout and lit tile, and the animation clock.
+  the last 371 ms), the worker thread that runs the analysis, and every readout and lit tile.
 
 Parameters are append-only (projects and Q-Links store them by index): add new ones at the end of
 `vst/params.json`.

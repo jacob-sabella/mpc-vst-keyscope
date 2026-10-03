@@ -17,7 +17,7 @@
 #include <string.h>
 
 enum {
-    P_LOCK, P_MEMORY, P_PROFILE, P_RANGE, P_CHORDS, P_TUNING, P_NOTATION, P_GATE, P_HOLD, P_ANIM,
+    P_LOCK, P_MEMORY, P_PROFILE, P_RANGE, P_CHORDS, P_TUNING, P_NOTATION, P_GATE, P_HOLD,
     NUM_P
 };
 static const struct { const char *key; int min, max, def; } PDEF[NUM_P] = {
@@ -30,12 +30,9 @@ static const struct { const char *key; int min, max, def; } PDEF[NUM_P] = {
     {"notation", 0, 2, 0},    /* auto, sharps, flats */
     {"gate", -80, -20, -55},
     {"hold", 0, 1, 0},
-    {"anim", 0, 1, 0},       /* the mountains moving behind the pages */
 };
 #define NUM_CAND 3
 #define NUM_RING 24   /* the circle of fifths: ring_1..12 the major keys clockwise from C, ring_13..24 their relative minors */
-#define NUM_BG 16     /* the mountains' animation frames, bg_1..bg_16 (vst/art/gen.py draws them) */
-#define BG_FRAMES 14700   /* audio frames per animation frame: 3 a second */
 #define TEXT_MAX 47   /* the wrapper shows a readout's first 47 characters */
 
 typedef struct {   /* what the screen shows: a copy of the analyser's results */
@@ -49,7 +46,6 @@ typedef struct {   /* what the screen shows: a copy of the analyser's results */
 typedef struct {
     _Atomic int p[NUM_P];
     atomic_int reset_req, ring_clear, busy, quit;   /* reset: the worker forgets, the audio thread empties the frame */
-    atomic_long played;   /* audio frames processed: the animation's clock */
 
     /* audio thread */
     ks_decim_t dec;
@@ -150,7 +146,6 @@ static void process(void *inst, const int16_t *in, int16_t *out, int frames) {
     inst_t *s = inst;
     float mono[256], dec[80];
     memcpy(out, in, sizeof(int16_t) * 2 * frames);   /* the audio passes through untouched */
-    atomic_fetch_add(&s->played, frames);
     if (atomic_exchange(&s->ring_clear, 0)) {   /* RESET: nothing heard before it reaches a frame */
         memset(s->ring, 0, sizeof s->ring);
         s->since = 0;
@@ -280,9 +275,6 @@ static int get_param(void *inst, const char *key, char *buf, int len) {
     if (i >= 0) return snprintf(buf, len, "%d", atomic_load(&s->p[i]));
     if (!strcmp(key, "state")) { state_text(s, buf, len); return (int)strlen(buf) + 1; }
     if (!strcmp(key, "reset")) return snprintf(buf, len, "0");
-    if ((n = index_of(key, "bg_", "_on", NUM_BG)) >= 0)   /* one frame shown at a time; none (the still page) when off */
-        return snprintf(buf, len, "%d", atomic_load(&s->p[P_ANIM]) && atomic_load(&s->played) / BG_FRAMES % NUM_BG == n);
-    if (index_of(key, "bg_", "", NUM_BG) >= 0) return snprintf(buf, len, " ");
 
     view_t v;
     pthread_mutex_lock(&s->mu);
