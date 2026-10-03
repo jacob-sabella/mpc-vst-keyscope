@@ -147,13 +147,15 @@ int main(int argc, char **argv) {
         E->destroy(a);
     }
 
-    /* ANIMATION: on by default, one frame at a time, 3 a second through all sixteen; off shows none */
+    /* ANIMATION: off by default (no frame shown); on, one frame at a time, 3 a second through all sixteen */
     {
         void *a = fresh();
         static int16_t z[2 * 147];
         char key[24];
         int seen = 0, ok = 1;
-        CHECK(!strcmp(get(a, "anim"), "1"), "animation on by default: %s", get(a, "anim"));
+        CHECK(!strcmp(get(a, "anim"), "0"), "animation off by default: %s", get(a, "anim"));
+        CHECK(!strcmp(get(a, "bg_1_on"), "0"), "animation off by default, yet frame 1 shown");
+        set(a, "anim", "1");
         for (int t = 0; t < 6 * 44100; t += 147) {   /* 6 s of silence, read every 147 frames */
             int lit = 0, which = -1;
             for (int k = 1; k <= 16; k++) {

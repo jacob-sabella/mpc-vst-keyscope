@@ -30,7 +30,7 @@ static const struct { const char *key; int min, max, def; } PDEF[NUM_P] = {
     {"notation", 0, 2, 0},    /* auto, sharps, flats */
     {"gate", -80, -20, -55},
     {"hold", 0, 1, 0},
-    {"anim", 0, 1, 1},       /* the mountains moving behind the pages */
+    {"anim", 0, 1, 0},       /* the mountains moving behind the pages */
 };
 #define NUM_CAND 3
 #define NUM_RING 24   /* the circle of fifths: ring_1..12 the major keys clockwise from C, ring_13..24 their relative minors */

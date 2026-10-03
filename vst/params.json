@@ -431,7 +431,7 @@
         "Off",
         "On"
       ],
-      "default": 1
+      "default": 0
     },
     {
       "key": "bg_1",
