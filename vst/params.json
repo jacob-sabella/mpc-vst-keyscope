@@ -3,6 +3,7 @@
   "params": [
     {
       "key": "lock",
+      "qlink_ticks": 6,
       "name": "Key",
       "options": [
         "Auto",
@@ -35,6 +36,7 @@
     },
     {
       "key": "memory",
+      "qlink_ticks": 6,
       "name": "Memory",
       "options": [
         "10 s",
@@ -46,6 +48,7 @@
     },
     {
       "key": "profile",
+      "qlink_ticks": 6,
       "name": "Profile",
       "options": [
         "Krumhansl",
@@ -56,6 +59,7 @@
     },
     {
       "key": "range",
+      "qlink_ticks": 6,
       "name": "Range",
       "options": [
         "Full",
@@ -67,6 +71,7 @@
     },
     {
       "key": "chords",
+      "qlink_ticks": 6,
       "name": "Chords",
       "options": [
         "Triads",
@@ -104,6 +109,7 @@
     },
     {
       "key": "hold",
+      "qlink_ticks": 6,
       "name": "Hold",
       "options": [
         "Off",
