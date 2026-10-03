@@ -54,7 +54,7 @@ int main(void) {
     CHECK(strncmp(get(a, "key_name"), c2, strlen(get(a, "key_name"))) == 0, "locked to the second candidate: %s (%s)", get(a, "key_name"), c2);
     CHECK(strcmp(get(a, "lock"), "0") != 0 && starts(get(a, "key_info"), "LOCKED"), "lock shows: %s", get(a, "key_info"));
     CHECK(!strcmp(get(a, "cand_2_on"), "1"), "the locked candidate is lit");
-    E->set_param(a, "cand_2", "1");
+    E->set_param(a, "cand_2", "0");   /* MPC writes a lit tile's opposite: 0 */
     CHECK(!strcmp(get(a, "lock"), "0") && !strcmp(get(a, "key_name"), "G Major"), "tapped again: back to %s", get(a, "key_name"));
 
     /* the circle of fifths: G major lights C G D and Am Em Bm; a tap on the wheel locks, again unlocks */
@@ -72,8 +72,12 @@ int main(void) {
     E->set_param(a, "ring_22_1", "1");
     CHECK(!strcmp(get(a, "key_name"), "C Minor") && !strcmp(get(a, "ring_10_1_on"), "1") && !strcmp(get(a, "ring_2_1_on"), "0"),
           "wheel tap locks: %s", get(a, "key_name"));
-    E->set_param(a, "ring_22_1", "1");
+    E->set_param(a, "ring_22_1", "0");
     CHECK(!strcmp(get(a, "lock"), "0") && !strcmp(get(a, "key_name"), "G Major"), "wheel tap again: back to %s", get(a, "key_name"));
+    E->set_param(a, "ring_14_1", "0");   /* Em, lit as a chord of G major: a tap still locks to it */
+    CHECK(!strcmp(get(a, "key_name"), "E Minor"), "a lit chord tile locks: %s", get(a, "key_name"));
+    E->set_param(a, "ring_14_1", "0");
+    CHECK(!strcmp(get(a, "lock"), "0"), "and unlocks: %s", get(a, "lock"));
 
     /* state round trip */
     E->set_param(a, "memory", "3");

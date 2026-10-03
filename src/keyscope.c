@@ -251,8 +251,9 @@ static void set_param(void *inst, const char *key, const char *val) {
     else if (!strcmp(key, "reset")) {
         if (atof(val) > 0.5) { atomic_store(&s->ring_clear, 1); atomic_store(&s->reset_req, 1); }
     }
+    /* The tiles' values are their lit state (pushed from "_on"), so MPC writes the opposite of what a tile shows when
+       it is tapped: 1 on a dark tile, 0 on a lit one (the locked key, or a chord of the key heard). Any write is a tap. */
     else if ((c = index_of(key, "cand_", "", NUM_CAND)) >= 0) {   /* a tap on a candidate locks to it; again unlocks */
-        if (atof(val) <= 0.5) return;
         view_t v;
         pthread_mutex_lock(&s->mu);
         v = s->view;
@@ -262,7 +263,6 @@ static void set_param(void *inst, const char *key, const char *val) {
         atomic_store(&s->p[P_LOCK], atomic_load(&s->p[P_LOCK]) == key2 + 1 ? 0 : key2 + 1);
     }
     else if ((c = index_of(key, "ring_", "_1", NUM_RING)) >= 0) {   /* a tap on the wheel locks to that key; again unlocks */
-        if (atof(val) <= 0.5) return;
         int key2 = ring_key(c);
         atomic_store(&s->p[P_LOCK], atomic_load(&s->p[P_LOCK]) == key2 + 1 ? 0 : key2 + 1);
     }

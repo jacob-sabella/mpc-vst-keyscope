@@ -17,8 +17,8 @@ static void *ui(void *inst) {
     char buf[256];
     for (int n = 0; !atomic_load(&stop); n++) {
         for (unsigned i = 0; i < sizeof keys / sizeof *keys; i++) E->get_param(inst, keys[i], buf, sizeof buf);
-        if (n % 50 == 25) { set(inst, "ring_9_1", "1"); set(inst, "ring_9_1", "0"); }   /* lock to Ab major... */
-        if (n % 50 == 26) { set(inst, "ring_9_1", "1"); set(inst, "ring_9_1", "0"); }   /* ...and back to AUTO */
+        if (n % 50 == 25) set(inst, "ring_9_1", "1");   /* lock to Ab major... */
+        if (n % 50 == 26) set(inst, "ring_9_1", "0");   /* ...and back to AUTO */
         if (n % 100 == 60) { set(inst, "notation", n % 200 ? "1" : "0"); set(inst, "chords", n % 200 ? "1" : "0"); }
         usleep(10000);
     }
