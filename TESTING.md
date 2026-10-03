@@ -37,3 +37,4 @@ MPC version and the date with the result.
 | 15 | Save and reload | Change settings, save the project, load it again | The settings come back (what was heard does not) |
 | 16 | Two instances | Keyscope on two tracks | Each shows its own track's key |
 | 17 | Load | Run it for a few minutes | CPU in MPC's meter as before; no audio dropouts |
+| 18 | ANIMATION | Watch the mountains, then turn ANIMATION off on SETUP and on again | They slide left a step at a time; off, the page is still; on, they move again |
