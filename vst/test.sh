@@ -10,7 +10,7 @@
 #   6. tests/rt_test.c: the production build (no KS_TEST) at four times real time with a UI thread reading and
 #      tapping, under ASan/UBSan and under TSan; reports process() time per block
 #   7. mpc-vst-plugins tools/test_port.sh: the generic wrapper's host test (instances, params, chunk)
-# tests/device.sh runs 1-6 on a device. Needs an mpc-vst-plugins checkout (MPC_VST, default: next to this repo).
+# tests/device.sh runs 1-4 and 6 on a device. Needs an mpc-vst-plugins checkout (MPC_VST, default: next to this repo).
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 MPC_VST="${MPC_VST:-$here/../../mpc-vst-plugins}"

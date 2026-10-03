@@ -169,7 +169,7 @@ static void midi(void *inst, const uint8_t *msg, int len) {
     }
 }
 
-#ifndef KS_TEST
+#if !defined(KS_TEST) && !defined(KS_NO_PORT)
 static void port_midi(void *user, const uint8_t *msg, int len) { midi(user, msg, len); }
 #endif
 
@@ -183,7 +183,7 @@ static void *create(const char *dir) {
     pthread_mutex_init(&s->mu, NULL);
     publish(s);
     if (sem_init(&s->sem, 0, 0) == 0 && pthread_create(&s->th, NULL, worker, s) == 0) s->th_ok = 1;
-#ifndef KS_TEST   /* the offline tests play MIDI through midi(), not a real sequencer port */
+#if !defined(KS_TEST) && !defined(KS_NO_PORT)   /* tests play MIDI through midi(); KS_NO_PORT: static test builds */
     s->port = seq_in_open(port_midi, s);
 #endif
     return s;

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# The engine tests on an MPC OS device: tests 1-5 of vst/test.sh, built for 32-bit ARM (static, -O2, no
-# sanitizers) and run over ssh at the lowest priority from a scratch folder in /tmp, which is removed afterwards.
+# The engine tests on an MPC OS device: tests 1-4 and 6 of vst/test.sh, built for 32-bit ARM (static, -O2, no
+# sanitizers; rt_test without the MIDI port, as a static program can't dlopen libasound) and run over ssh at the lowest priority from a scratch folder in /tmp, which is removed afterwards.
 # MPC itself is not stopped or touched; its audio runs at real-time priority, so a song playing keeps playing.
 #   tests/device.sh <[user@]host>     (user defaults to root; key-based ssh)
 # rt_test's process() timing is the figure to watch: on the device it runs beside MPC's own load.
@@ -22,7 +22,7 @@ docker run --rm --platform linux/arm/v7 -u "$(id -u):$(id -g)" -v "$here":/b -w 
     E="src/keyscope.c src/analyzer.c src/seq_in.c -lm -lpthread -ldl"
     gcc $CF tests/analyzer_test.c src/analyzer.c -lm -o vst/build/device/analyzer_test
     for t in engine settings robust; do gcc $CF -DKS_TEST tests/${t}_test.c $E -o vst/build/device/${t}_test; done
-    gcc $CF tests/rt_test.c $E -o vst/build/device/rt_test'
+    gcc $CF -DKS_NO_PORT tests/rt_test.c $E -o vst/build/device/rt_test'
 
 ssh_() { ssh -o BatchMode=yes -o ConnectTimeout=10 "$target" "$@"; }
 dir=/tmp/keyscope-test
