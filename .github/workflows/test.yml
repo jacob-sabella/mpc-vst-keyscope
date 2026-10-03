@@ -1,8 +1,9 @@
 # The offline tests (vst/test.sh) on every push and pull request: the detectors, the engine, every setting, bad
 # input, the production build at real time under ASan and TSan, and the wrapper's host test.
 #
-# mpc-vst-plugins is pinned to the same commit as release.yml, for the same reason (see there): the fork's head
-# of sd88me/mpc-vst-plugins#90 until that and the host-test-effect fix are upstream. Move both pins together.
+# mpc-vst-plugins is pinned to the same commit as release.yml, for the same reason (see there): the fork's
+# keyscope-ci-base (sd88me/mpc-vst-plugins#90 plus the host-test-effect fix) until both are upstream. Move both
+# pins together.
 name: Test
 
 on:
@@ -19,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: jacob-sabella/mpc-vst-plugins
-          ref: 8bb7c49432b683da7a3aa537a1f479417cc27899
+          ref: 235502328e386c0830dc7bf6a61515a01a007ac6
           path: mpc-vst-plugins
       # TSan can't map its shadow memory with the runner's default 32 bits of mmap randomness
       - run: sudo sysctl vm.mmap_rnd_bits=28
