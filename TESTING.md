@@ -3,9 +3,10 @@
 ## Offline (no device)
 
 ```sh
-vst/test.sh              # x86 with sanitizers: analyzer, engine, settings, robustness, real time (ASan and TSan),
-                         # and the wrapper's host test. CI runs the same on every push.
-tests/device.sh <host>   # tests 1-5 built for armv7 and run on a device over ssh (root, key-based), at nice 19
+vst/test.sh              # x86 with sanitizers: analyzer, engine, settings, robustness, the MIDI port against the
+                         # machine's ALSA sequencer (skipped without one), real time (ASan and TSan), and the
+                         # wrapper's host test. CI runs the same on every push.
+tests/device.sh <host>   # tests 1-4 and 6 built for armv7 and run on a device over ssh (root, key-based), at nice 19
                          # from /tmp/keyscope-test, removed afterwards. MPC is not stopped or touched.
 ```
 
@@ -14,7 +15,7 @@ next to MPC's own load.
 
 ## On the device, by hand
 
-What the tests can't reach: the screen, touch, Q-Links and a real mix. Put Keyscope as an insert on a track that
+What the tests can't reach: the screen, touch, Q-Links, a real mix and MPC's MIDI routing. Put Keyscope as an insert on a track that
 plays something in a key you know (a loop, a song, a keyboard part), and go through these. Note the device, the
 MPC version and the date with the result.
 
@@ -32,8 +33,13 @@ MPC version and the date with the result.
 | 10 | RESET | Tap RESET | Back to "LISTENING..." with the history empty |
 | 11 | CHORDS page | Play a 7th chord with TRIADS, then + 7THS | The triad name, then the 7th name |
 | 12 | HISTORY page | Change key in the music | A new line at the top with the time; the old key below |
-| 13 | SETUP page | Each of MEMORY, PROFILE, RANGE, NOTATION, TUNING, GATE | The readouts change as described in the README; a GATE above the track's level reads TOO QUIET |
+| 13 | SETUP page | Each of MEMORY, PROFILE, RANGE, NOTATION, TUNING, GATE, SOURCE | The readouts change as described in the README; a GATE above the track's level reads TOO QUIET |
 | 14 | Q-Links | On each tab, turn each Q-Link | The four controls in the README table, one option per few ticks |
 | 15 | Save and reload | Change settings, save the project, load it again | The settings come back (what was heard does not) |
 | 16 | Two instances | Keyscope on two tracks | Each shows its own track's key |
 | 17 | Load | Run it for a few minutes | CPU in MPC's meter as before; no audio dropouts |
+| 18 | MIDI port | SETUP page; then a MIDI track's I/O → MIDI OUT list | "MIDI IN: Keyscope MIDI In" on SETUP; the port is in the list |
+| 19 | MIDI key | Set that MIDI track's MIDI OUT to the port, play chords into it | Key, chord and notes as for audio; status "MIDI: n NOTES"; TUNING stays "-" |
+| 20 | Sustain | Hold the pedal, play and release a chord, then lift the pedal | The notes stay lit until the pedal is lifted |
+| 21 | SOURCE | AUDIO, then MIDI, with both playing | AUDIO: the notes count for nothing; MIDI: the audio counts for nothing ("WAITING FOR MIDI NOTES" when none are held) |
+| 22 | Two ports | A second Keyscope | Its SETUP reads "Keyscope MIDI In 2"; each instance hears only its own port |

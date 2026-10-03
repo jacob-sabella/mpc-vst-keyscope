@@ -2,8 +2,9 @@
 
 Key and chord detection for Akai MPC OS standalone devices (MPC Live/One/X/Key, Force), built as a native VST2
 insert effect for MPC's own plugin host, with its own screen skin and Q-Links. Put it on any track and it listens to
-whatever passes through it, a sample, a loop, a keyboard part or a whole mix, and names the **key**, the **chord**,
-the **bass note** and the **tuning**. The audio passes through untouched. It all runs on the device.
+whatever passes through it, a sample, a loop, a keyboard part or a whole mix, and to the notes played into its MIDI
+port, and names the **key**, the **chord**, the **bass note** and the **tuning**. The audio passes through untouched.
+It all runs on the device.
 
 **Status:** passes the offline tests (x86, ASan/UBSan and TSan), builds for armhf, its engine tests pass on the
 device, and every function has been run on an MPC Key 37 (firmware 3.9.1.2) from the screen with chords playing
@@ -27,15 +28,22 @@ driven from a script: [docs/keyscope.mp4](docs/keyscope.mp4) (with captions).
   m7 and m7b5 chords), with the bass note as a slash chord (C/E), and the chords before it.
 - **HISTORY**: every key change with the time since listening started, the chord trail, the tuning and the
   loudest note.
-- **SETUP**: MEMORY, PROFILE, RANGE, NOTATION, TUNING, CHORDS and GATE (below).
+- **SETUP**: MEMORY, PROFILE, RANGE, NOTATION, TUNING, GATE and SOURCE (below), and the MIDI port's name.
 - **Tuning**: where the music sits against A = 440 (a band tuned to 432 Hz reads -32 cents), followed when TUNING
   is AUTO so a detuned recording still lands on the right notes.
 
 ## Using it
 
-Add Keyscope as an insert on the track you want to read (Channel Mixer, an insert slot, the VST list). It reads
-audio only: on a MIDI or plugin track it hears the instrument's output. On a drum or full-mix track, RANGE = MIDS keeps the kick and hi-hats out of the key.
-Each instance reads its own track.
+Add Keyscope as an insert on the track you want to read (Channel Mixer, an insert slot, the VST list). It hears the
+audio through that insert: on a plugin or keygroup track, the instrument's output. On a drum or full-mix track,
+RANGE = MIDS keeps the kick and hi-hats out of the key.
+
+**MIDI.** MPC sends no MIDI to an insert effect, so each Keyscope opens a MIDI port of its own, named on SETUP:
+"Keyscope MIDI In" (a second instance gets "Keyscope MIDI In 2", and so on). To read notes, play them on a MIDI track
+whose I/O → MIDI OUT is that port. The notes count for the key and chords like audio does: held
+notes, the sustain pedal, and a note shorter than a frame still counts. MIDI gives exact notes even when the sound is
+a drum, a pad or a heavily processed synth. SOURCE picks what is read: BOTH (the default; each source that has
+something counts half), AUDIO or MIDI.
 
 ## Pages and Q-Links
 
@@ -46,8 +54,8 @@ Each instance reads its own track.
 | HISTORY | MEMORY, GATE, HOLD, KEY LOCK |
 | SETUP | MEMORY, PROFILE, RANGE, GATE |
 
-RANGE picks the band analysed: FULL (50 Hz to 5 kHz), BASS (40-300 Hz, for a bassline), MIDS (120 Hz to 2 kHz,
-keeps hi-hats and kick out), HIGHS (400 Hz to 5 kHz). NOTATION spells notes as the key does (AUTO), or always with
+RANGE picks the band analysed: FULL (50 Hz to 5 kHz; every MIDI note), BASS (40-300 Hz, for a bassline), MIDS
+(120 Hz to 2 kHz, keeps hi-hats and kick out), HIGHS (400 Hz to 5 kHz). MIDI notes are banded by their pitch. NOTATION spells notes as the key does (AUTO), or always with
 sharps or flats.
 
 ## How it works
@@ -67,6 +75,11 @@ chromagram:
 - the **bass note** comes from the peaks under 260 Hz;
 - the **tuning** is the circular mean of every peak's distance from the nearest note, over about 8 s.
 
+MIDI notes make a chromagram of their own each frame (each pitch class weighs its loudest note, the lowest note under
+260 Hz is the bass) and go through the same detectors. With SOURCE = BOTH, each source that has something is
+normalised and counts half. The port is read on its own thread (libasound is loaded at run time, so the plugin still
+loads without it); notes from it and from the VST host land in a table of atomics that the worker reads once a frame.
+
 Audio under GATE counts for nothing, so silence between songs doesn't pull the key around. HOLD freezes
 everything; RESET forgets everything heard.
 
@@ -78,8 +91,8 @@ backgrounds as SVG (`vst/art/wheel.svg`, `vst/art/scene.svg`); the wheel's geome
 
 ## Performance
 
-On an MPC Key 37 (mpc-vst-plugins' `tools/bench.sh`, `vst/bench.txt`): worst p99 4.6% of the 2.9 ms block, worst
-block 8.4%, the analysis thread about 1% of a core: PASS.
+On an MPC Key 37 (mpc-vst-plugins' `tools/bench.sh`, `vst/bench.txt`): worst p99 4.3% of the 2.9 ms block, worst
+block 8.3%, the analysis thread about 1% of a core: PASS.
 
 ## Building
 
@@ -92,7 +105,7 @@ Keyscope relies on its wrapper and skin changes (tiles lit from the engine, mome
 fork's `host-test-effect` fix to run an effect.
 
 ```sh
-vst/test.sh              # offline: detectors, engine, settings, bad input, real time (ASan, TSan), the host test
+vst/test.sh              # offline: detectors, engine, settings, bad input, the MIDI port, real time (ASan, TSan), host test
 vst/build.sh             # vst/build/keyscope.so, the skin and pluginlist-entry.xml (armhf, glibc <= 2.32)
 tests/device.sh <host>   # the engine tests built for armv7 and run on a device over ssh (MPC is not touched)
 ```
@@ -121,7 +134,9 @@ The engine is plain C on mpc-vst-plugins' generic wrapper (`wrapper/engine.h`, `
   templates, the bass note and the key-change log. No allocation and no locks; tested on its own
   (`tests/analyzer_test.c`).
 - `src/keyscope.c`: the plugin: parameters and saved state, the audio thread (pass-through, decimation, a ring of
-  the last 371 ms), the worker thread that runs the analysis, and every readout and lit tile.
+  the last 371 ms), the MIDI note table, the worker thread that runs the analysis, and every readout and lit tile.
+- `src/seq_in.c`: the MIDI port: an ALSA sequencer client per instance, read on its own thread (`tests/seq_in_test.c`
+  sends it real events where the machine has a sequencer).
 
 Parameters are append-only (projects and Q-Links store them by index): add new ones at the end of
 `vst/params.json`.
