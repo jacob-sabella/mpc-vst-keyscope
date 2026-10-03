@@ -1,6 +1,6 @@
 /* Bad input through the plugin's entry points, under ASan/UBSan: unknown and malformed keys, out-of-range and
  * non-numeric values, garbage saved state, tiny text buffers on every key the skin reads, odd audio (silence, full
- * scale, DC, Nyquist, a click), and create/destroy churn including a destroy while the worker is busy. Built by
+ * scale, DC, Nyquist, a click), malformed MIDI, and create/destroy churn including a destroy while the worker is busy. Built by
  * vst/test.sh with -DKS_TEST. */
 #include "play.h"
 #include "params.h"
@@ -9,7 +9,7 @@
 static const char *READOUTS[] = {"key_name", "key_info", "scale_notes", "chord", "trail", "tuning_read", "loudest",
                                  "outside", "status", "state", "reset", "cand_1", "cand_2", "cand_3", "cand_1_on",
                                  "cand_3_on", "note_1", "note_12", "note_1_on", "note_12_on", "ring_1_1", "ring_24_1",
-                                 "ring_1_1_on", "ring_24_1_on", "log_1", "log_6"};
+                                 "ring_1_1_on", "ring_24_1_on", "log_1", "log_6", "midi_in"};
 
 /* every key at buffer sizes 1..4 and 300: always NUL-terminated inside the buffer, nothing written past it */
 static void small_buffers(void *a, const char *what) {
@@ -58,6 +58,29 @@ int main(void) {
             CHECK(E->get_param(a, bad[i], buf, sizeof buf) <= 0, "%s reads back %s", bad[i], buf);
         }
         CHECK(!strcmp(get(a, "lock"), "0"), "a bad key changed the lock: %s", get(a, "lock"));
+        /* MIDI: short, empty, data bytes without a status, every status byte, out-of-range data; then all notes off */
+        static const uint8_t m1[] = {0x90}, m2[] = {0x90, 60}, junk[] = {0x3C, 0x64, 0x00}, sysex[] = {0xF0, 0x7E, 0xF7},
+                             wide[] = {0x9F, 0xFF, 0xFF}, cc[] = {0xBF, 0xC0, 0x7F};
+        E->midi(a, NULL, 0);
+        E->midi(a, m1, 1);
+        E->midi(a, m2, 2);
+        E->midi(a, junk, 3);
+        E->midi(a, sysex, 3);
+        E->midi(a, wide, 3);
+        E->midi(a, cc, 3);
+        for (int st = 0x80; st <= 0xFF; st++) {
+            uint8_t m[3] = {(uint8_t)st, (uint8_t)(st * 7), (uint8_t)(st * 13)};
+            E->midi(a, m, 3);
+        }
+        for (int ch = 0; ch < 16; ch++) {
+            uint8_t off[3] = {(uint8_t)(0xB0 | ch), 123, 0}, ped[3] = {(uint8_t)(0xB0 | ch), 64, 0};
+            E->midi(a, ped, 3);
+            E->midi(a, off, 3);
+        }
+        play(a, NULL, 0, 0.2f, 0, NULL);   /* the junk's note-ons count once (struck since the last frame)... */
+        set(a, "reset", "1");               /* ...then are forgotten for the checks below */
+        play(a, NULL, 0, 0.2f, 0, NULL);
+        CHECK(starts(get(a, "status"), "TOO QUIET"), "after junk MIDI and all notes off: %s", get(a, "status"));
         set(a, "cand_1", "1");   /* a candidate with nothing heard yet: nothing to lock to */
         CHECK(!strcmp(get(a, "lock"), "0"), "an empty candidate locked: %s", get(a, "lock"));
 
@@ -66,7 +89,7 @@ int main(void) {
             {"lock", "25", "24"}, {"lock", "-3", "0"}, {"lock", "7.6", "8"}, {"lock", "1e9", "24"}, {"lock", "-1e9", "0"},
             {"gate", "0", "-20"}, {"gate", "-200", "-80"}, {"gate", "-40.4", "-40"}, {"memory", "9", "3"},
             {"profile", "abc", "0"}, {"range", "", "0"}, {"hold", "0.4", "0"}, {"hold", "0.6", "1"}, {"notation", " 2", "2"},
-            {"chords", "1junk", "1"}, {"tuning", "nan", "0"}, {"gate", "inf", "-20"}, {"gate", "-inf", "-80"},
+            {"chords", "1junk", "1"}, {"tuning", "nan", "0"}, {"source", "3", "2"}, {"source", "-1", "0"}, {"gate", "inf", "-20"}, {"gate", "-inf", "-80"},
         };
         for (unsigned i = 0; i < sizeof vals / sizeof *vals; i++) {
             set(a, vals[i].key, vals[i].val);

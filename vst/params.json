@@ -423,6 +423,22 @@
       "name": "Wheel Dm",
       "display": "string",
       "momentary": true
+    },
+    {
+      "key": "source",
+      "name": "Source",
+      "options": [
+        "Both",
+        "Audio",
+        "MIDI"
+      ],
+      "default": 0
+    },
+    {
+      "key": "midi_in",
+      "name": "MIDI In",
+      "display": "string",
+      "type": "readout"
     }
   ]
 }

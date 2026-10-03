@@ -4,9 +4,15 @@
  * Threads: the audio thread (process) downmixes, decimates (analyzer.h) and hands a frame every KS_HOP to a
  * worker thread, which runs the FFT and the detectors and publishes a view under a mutex held only for a copy.
  * get_param (the host's UI thread and the wrapper's polling on the audio thread) reads that view. A frame
- * that arrives while the worker is still busy is skipped. */
+ * that arrives while the worker is still busy is skipped.
+ *
+ * MIDI arrives from two places: the VST host (midi(), on the audio thread) and the instance's ALSA sequencer port
+ * (seq_in.h, on its reader thread), the one MPC actually sends to. Both write a table of atomics, a note per channel
+ * (held, or held by the sustain pedal) and a count of note-ons per note, so a note struck and released between two
+ * frames still counts; the worker reads it once a frame. */
 #include "engine.h"
 #include "analyzer.h"
+#include "seq_in.h"
 #include <math.h>
 #include <pthread.h>
 #include <sched.h>
@@ -17,7 +23,7 @@
 #include <string.h>
 
 enum {
-    P_LOCK, P_MEMORY, P_PROFILE, P_RANGE, P_CHORDS, P_TUNING, P_NOTATION, P_GATE, P_HOLD,
+    P_LOCK, P_MEMORY, P_PROFILE, P_RANGE, P_CHORDS, P_TUNING, P_NOTATION, P_GATE, P_HOLD, P_SOURCE,
     NUM_P
 };
 static const struct { const char *key; int min, max, def; } PDEF[NUM_P] = {
@@ -30,13 +36,14 @@ static const struct { const char *key; int min, max, def; } PDEF[NUM_P] = {
     {"notation", 0, 2, 0},    /* auto, sharps, flats */
     {"gate", -80, -20, -55},
     {"hold", 0, 1, 0},
+    {"source", 0, SRC_COUNT - 1, SRC_BOTH},
 };
 #define NUM_CAND 3
 #define NUM_RING 24   /* the circle of fifths: ring_1..12 the major keys clockwise from C, ring_13..24 their relative minors */
 #define TEXT_MAX 47   /* the wrapper shows a readout's first 47 characters */
 
 typedef struct {   /* what the screen shows: a copy of the analyser's results */
-    int key, top[3], ntrail, nlog, voiced_now, has_audio;
+    int key, top[3], ntrail, nlog, voiced_now, has_audio, audio_now, midi_now, midi_notes, tuned;
     float score[24], tuning_cents, loud_hz, level_db, fast[12];
     ks_chord_t chord, trail[KS_TRAIL];
     long log_frame[KS_LOG], frames, quiet_run;
@@ -61,7 +68,17 @@ typedef struct {
 
     pthread_mutex_t mu;
     view_t view;
+
+    /* MIDI: written by midi() and the port's reader, read by the worker */
+    atomic_uchar on[16][128];    /* NOTE_* */
+    atomic_uchar sus[16];        /* sustain pedal down */
+    atomic_uchar vel[128];       /* the last note-on's velocity */
+    atomic_uint struck[128];     /* note-ons so far */
+    unsigned seen[128];          /* worker: struck[] as of the last frame */
+    seq_in_t *port;
 } inst_t;
+
+enum { NOTE_OFF, NOTE_HELD, NOTE_SUSTAINED };   /* SUSTAINED: released while the pedal was down */
 
 static int clampi(int v, int lo, int hi) { return v < lo ? lo : v > hi ? hi : v; }
 
@@ -87,6 +104,10 @@ static void publish(inst_t *s) {
     v.level_db = k->level_db;
     v.voiced_now = k->voiced_now;
     v.has_audio = k->voiced > 0;
+    v.audio_now = k->audio_now;
+    v.midi_now = k->midi_now;
+    v.midi_notes = k->midi_notes;
+    v.tuned = k->audio_frames > 0;
     v.frames = k->frames;
     v.quiet_run = k->quiet_run;
     memcpy(v.fast, k->fast_chroma, sizeof v.fast);
@@ -107,6 +128,14 @@ static void *worker(void *arg) {
         k->chords = atomic_load(&s->p[P_CHORDS]);
         k->auto_tune = atomic_load(&s->p[P_TUNING]) == 0;
         k->gate_db = (float)atomic_load(&s->p[P_GATE]);
+        k->source = atomic_load(&s->p[P_SOURCE]);
+        for (int m = 0; m < 128; m++) {   /* sounding now, or struck since the last frame */
+            unsigned n = atomic_load(&s->struck[m]);
+            int sounding = n != s->seen[m];
+            s->seen[m] = n;
+            for (int ch = 0; ch < 16 && !sounding; ch++) sounding = atomic_load(&s->on[ch][m]) != NOTE_OFF;
+            k->midi[m] = sounding ? 0.4f + 0.6f * atomic_load(&s->vel[m]) / 127.0f : 0.0f;
+        }
         if (atomic_exchange(&s->reset_req, 0)) ks_reset(k);
         if (!atomic_load(&s->p[P_HOLD])) ks_frame(k, s->frame);
         publish(s);
@@ -114,6 +143,35 @@ static void *worker(void *arg) {
     }
     return NULL;
 }
+
+/* A MIDI message from either source: note on/off, the sustain pedal (CC 64), all notes off (CC 120, 123). */
+static void midi(void *inst, const uint8_t *msg, int len) {
+    inst_t *s = inst;
+    if (!msg || len < 3 || msg[0] < 0x80) return;
+    int type = msg[0] & 0xF0, ch = msg[0] & 15, d1 = msg[1] & 127, d2 = msg[2] & 127;
+    if (type == 0x90 && d2 > 0) {
+        atomic_store(&s->vel[d1], (unsigned char)d2);
+        atomic_store(&s->on[ch][d1], NOTE_HELD);
+        atomic_fetch_add(&s->struck[d1], 1);
+    } else if (type == 0x80 || type == 0x90) {
+        unsigned char held = NOTE_HELD;
+        atomic_compare_exchange_strong(&s->on[ch][d1], &held, atomic_load(&s->sus[ch]) ? NOTE_SUSTAINED : NOTE_OFF);
+    } else if (type == 0xB0 && d1 == 64) {
+        atomic_store(&s->sus[ch], d2 >= 64);
+        if (d2 < 64)
+            for (int m = 0; m < 128; m++) {   /* a note struck again since keeps sounding */
+                unsigned char held = NOTE_SUSTAINED;
+                atomic_compare_exchange_strong(&s->on[ch][m], &held, NOTE_OFF);
+            }
+    } else if (type == 0xB0 && (d1 == 120 || d1 == 123)) {
+        atomic_store(&s->sus[ch], 0);
+        for (int m = 0; m < 128; m++) atomic_store(&s->on[ch][m], NOTE_OFF);
+    }
+}
+
+#ifndef KS_TEST
+static void port_midi(void *user, const uint8_t *msg, int len) { midi(user, msg, len); }
+#endif
 
 static void *create(const char *dir) {
     (void)dir;
@@ -125,11 +183,15 @@ static void *create(const char *dir) {
     pthread_mutex_init(&s->mu, NULL);
     publish(s);
     if (sem_init(&s->sem, 0, 0) == 0 && pthread_create(&s->th, NULL, worker, s) == 0) s->th_ok = 1;
+#ifndef KS_TEST   /* the offline tests play MIDI through midi(), not a real sequencer port */
+    s->port = seq_in_open(port_midi, s);
+#endif
     return s;
 }
 
 static void destroy(void *inst) {
     inst_t *s = inst;
+    seq_in_close(s->port);   /* first: its reader writes into s */
     if (s->th_ok) {
         atomic_store(&s->quit, 1);
         sem_post(&s->sem);
@@ -140,7 +202,6 @@ static void destroy(void *inst) {
     free(s);
 }
 
-static void midi(void *inst, const uint8_t *msg, int len) { (void)inst; (void)msg; (void)len; }
 
 static void process(void *inst, const int16_t *in, int16_t *out, int frames) {
     inst_t *s = inst;
@@ -316,7 +377,7 @@ static int get_param(void *inst, const char *key, char *buf, int len) {
         return o;
     }
     if (!strcmp(key, "tuning_read")) {
-        if (!v.has_audio) return snprintf(buf, len, "TUNING: -");
+        if (!v.tuned) return snprintf(buf, len, "TUNING: -");   /* MIDI has no tuning to read */
         int c = (int)lroundf(v.tuning_cents);
         return snprintf(buf, len, "TUNING: A4 = %.1f HZ (%+d C)%s", 440.0 * pow(2.0, v.tuning_cents / 1200.0), c,
                         atomic_load(&s->p[P_TUNING]) ? ", NOT USED" : "");
@@ -337,9 +398,20 @@ static int get_param(void *inst, const char *key, char *buf, int len) {
         return o ? o : snprintf(buf, len, "ALL IN KEY");
     }
     if (!strcmp(key, "status")) {
+        int src = atomic_load(&s->p[P_SOURCE]), db = (int)lroundf(fmaxf(v.level_db, -99));
         if (atomic_load(&s->p[P_HOLD])) return snprintf(buf, len, "HOLD: NOT LISTENING");
-        if (!v.voiced_now) return snprintf(buf, len, "TOO QUIET (%d DB, GATE %d)", (int)lroundf(fmaxf(v.level_db, -99)), atomic_load(&s->p[P_GATE]));
-        return snprintf(buf, len, "LISTENING  %d DB", (int)lroundf(v.level_db));
+        if (!v.voiced_now) {
+            if (src == SRC_MIDI) return snprintf(buf, len, "WAITING FOR MIDI NOTES");
+            return snprintf(buf, len, "TOO QUIET (%d DB, GATE %d)%s", db, atomic_load(&s->p[P_GATE]), src == SRC_BOTH ? ", NO MIDI" : "");
+        }
+        char m[24] = "";
+        if (v.midi_now) snprintf(m, sizeof m, "MIDI: %d NOTE%s", v.midi_notes, v.midi_notes == 1 ? "" : "S");
+        if (!v.audio_now) return snprintf(buf, len, "%s", m);
+        return snprintf(buf, len, "LISTENING  %d DB%s%s", db, v.midi_now ? "  +  " : "", m);
+    }
+    if (!strcmp(key, "midi_in")) {
+        if (atomic_load(&s->p[P_SOURCE]) == SRC_AUDIO) return snprintf(buf, len, "MIDI IN: NOT USED (SOURCE: AUDIO)");
+        return snprintf(buf, len, "%s", seq_in_status(s->port));
     }
     if ((n = index_of(key, "cand_", "", NUM_CAND)) >= 0) {
         if (v.top[n] < 0 || !v.has_audio) return snprintf(buf, len, " ");

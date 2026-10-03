@@ -3,6 +3,15 @@
  * waits for the worker instead of skipping a frame, as the test runs faster than real time). */
 #include "play.h"
 
+static void msg(void *inst, int status, int d1, int d2) {
+    uint8_t m[3] = {(uint8_t)status, (uint8_t)d1, (uint8_t)d2};
+    E->midi(inst, m, 3);
+}
+
+static void chord_on(void *inst, const int *notes, int n, int on) {
+    for (int i = 0; i < n; i++) msg(inst, on ? 0x90 : 0x80, notes[i], on ? 100 : 0);
+}
+
 int main(void) {
     E = mpc_engine();
     CHECK(E->process != NULL, "an effect provides process()");
@@ -101,6 +110,84 @@ int main(void) {
     play(a, quiet, 1, 0.5f, 0.00001f, &differs);
     CHECK(!strcmp(get(a, "key_name"), "NO KEY YET") && !strcmp(get(a, "trail"), "CHORDS: -"), "reset: %s / %s", get(a, "key_name"), get(a, "trail"));
     CHECK(starts(get(a, "status"), "TOO QUIET"), "quiet: %s", get(a, "status"));
+
+    /* MIDI: notes into midi() with silence through process(); SOURCE is BOTH by default */
+    void *c = E->create(NULL);
+    CHECK(!strcmp(get(c, "source"), "0") && !strcmp(get(c, "midi_in"), "MIDI IN: OFF"), "source BOTH, no port in tests: %s", get(c, "midi_in"));
+    static const int mD[] = {50, 62, 66, 69}, mG[] = {43, 62, 67, 71}, mA[] = {45, 61, 64, 69}, mEm[] = {40, 64, 67, 71};
+    const int *prog[] = {mD, mG, mEm, mA};
+    for (int r = 0; r < 2; r++)
+        for (int i = 0; i < 4; i++) {
+            chord_on(c, prog[i], 4, 1);
+            play(c, NULL, 0, 2, 0, &differs);
+            chord_on(c, prog[i], 4, 0);
+        }
+    chord_on(c, mA, 4, 1);
+    play(c, NULL, 0, 0.5f, 0, &differs);
+    CHECK(!strcmp(get(c, "key_name"), "D Major"), "MIDI key: %s", get(c, "key_name"));
+    CHECK(!strcmp(get(c, "chord"), "A"), "MIDI chord: %s", get(c, "chord"));
+    CHECK(!strcmp(get(c, "status"), "MIDI: 4 NOTES"), "MIDI status: %s", get(c, "status"));
+    CHECK(!strcmp(get(c, "note_2_on"), "1") && !strcmp(get(c, "note_5_on"), "1") && !strcmp(get(c, "note_10_on"), "1") &&
+          !strcmp(get(c, "note_1_on"), "0"), "A C# E lit (A doubled), C not");
+    chord_on(c, mA, 4, 0);
+    static const int mD2[] = {38, 50, 62, 66, 69};   /* D in three octaves: F# and A still light */
+    chord_on(c, mD2, 5, 1);
+    play(c, NULL, 0, 1.0f, 0, &differs);
+    CHECK(!strcmp(get(c, "note_3_on"), "1") && !strcmp(get(c, "note_7_on"), "1") && !strcmp(get(c, "note_10_on"), "1"),
+          "D F# A lit with D tripled: %s %s %s", get(c, "note_3_on"), get(c, "note_7_on"), get(c, "note_10_on"));
+    CHECK(!strcmp(get(c, "chord"), "D"), "chord D: %s", get(c, "chord"));
+    CHECK(!strcmp(get(c, "tuning_read"), "TUNING: -"), "no tuning from MIDI: %s", get(c, "tuning_read"));
+    msg(c, 0xB0, 123, 0);   /* all notes off */
+    CHECK(!strcmp(get(c, "status"), "MIDI: 5 NOTES"), "before all notes off: %s", get(c, "status"));
+    play(c, NULL, 0, 1.5f, 0, &differs);
+    CHECK(!strcmp(get(c, "chord"), "-") && starts(get(c, "status"), "TOO QUIET") && strstr(get(c, "status"), "NO MIDI"),
+          "all notes off: %s / %s", get(c, "chord"), get(c, "status"));
+
+    /* a note struck and released between two frames still counts */
+    msg(c, 0x90, 64, 90);
+    msg(c, 0x80, 64, 0);
+    play(c, NULL, 0, 0.05f, 0, &differs);
+    CHECK(!strcmp(get(c, "note_5_on"), "1"), "a short E is seen");
+
+    /* the sustain pedal holds released notes; lifting it lets them go, but not one struck again */
+    play(c, NULL, 0, 1.5f, 0, &differs);
+    msg(c, 0xB1, 64, 127);
+    msg(c, 0x91, 60, 100);
+    msg(c, 0x91, 67, 100);
+    msg(c, 0x81, 60, 0);
+    msg(c, 0x81, 67, 0);
+    play(c, NULL, 0, 1.0f, 0, &differs);
+    CHECK(!strcmp(get(c, "status"), "MIDI: 2 NOTES"), "pedal down: %s", get(c, "status"));
+    msg(c, 0x91, 67, 100);   /* G again, held */
+    msg(c, 0xB0, 64, 0);     /* the pedal on another channel: nothing changes */
+    play(c, NULL, 0, 0.2f, 0, &differs);
+    CHECK(!strcmp(get(c, "status"), "MIDI: 2 NOTES"), "another channel's pedal: %s", get(c, "status"));
+    msg(c, 0xB1, 64, 0);
+    play(c, NULL, 0, 0.2f, 0, &differs);
+    CHECK(!strcmp(get(c, "status"), "MIDI: 1 NOTE"), "pedal up, G still held: %s", get(c, "status"));
+    msg(c, 0x81, 67, 0);
+    msg(c, 0x90, 60, 0);   /* note-on with velocity 0 is a note-off */
+    play(c, NULL, 0, 0.2f, 0, &differs);
+
+    /* SOURCE AUDIO ignores MIDI; MIDI ignores audio; a note-on with velocity 0 is a note-off */
+    set(c, "source", "1");
+    msg(c, 0x90, 60, 100);
+    play(c, NULL, 0, 0.5f, 0, &differs);
+    CHECK(starts(get(c, "status"), "TOO QUIET") && !strstr(get(c, "status"), "MIDI"), "SOURCE AUDIO: %s", get(c, "status"));
+    CHECK(!strcmp(get(c, "midi_in"), "MIDI IN: NOT USED (SOURCE: AUDIO)"), "midi_in: %s", get(c, "midi_in"));
+    set(c, "source", "2");
+    static const int A4[] = {69};
+    play(c, A4, 1, 0.5f, 0.1f, &differs);
+    CHECK(!strcmp(get(c, "status"), "MIDI: 1 NOTE") && !strcmp(get(c, "note_10_on"), "0"), "SOURCE MIDI: %s", get(c, "status"));
+    msg(c, 0x90, 60, 0);
+    play(c, NULL, 0, 0.5f, 0, &differs);
+    CHECK(!strcmp(get(c, "status"), "WAITING FOR MIDI NOTES"), "SOURCE MIDI, nothing held: %s", get(c, "status"));
+    CHECK(strstr(get(c, "state"), "source=2") != NULL, "source is saved: %s", get(c, "state"));
+    set(c, "source", "0");
+    msg(c, 0x90, 64, 100);
+    play(c, A4, 1, 0.5f, 0.1f, &differs);
+    CHECK(starts(get(c, "status"), "LISTENING") && strstr(get(c, "status"), "+  MIDI: 1 NOTE"), "BOTH: %s", get(c, "status"));
+    E->destroy(c);
 
     E->destroy(a);
     E->destroy(b);

@@ -19,7 +19,7 @@ python3 "$MPC_VST/tools/gen_vst.py" "$here/vst/vst.json" --params-h
 echo "building for armv7 (QEMU, a few minutes)"
 docker run --rm --platform linux/arm/v7 -u "$(id -u):$(id -g)" -v "$here":/b -w /b arm32v7/gcc:11-bullseye bash -euc '
     CF="-std=gnu11 -Wall -Wextra -Werror -O2 -g -static -Isrc -Ivst/build"
-    E="src/keyscope.c src/analyzer.c -lm -lpthread"
+    E="src/keyscope.c src/analyzer.c src/seq_in.c -lm -lpthread -ldl"
     gcc $CF tests/analyzer_test.c src/analyzer.c -lm -o vst/build/device/analyzer_test
     for t in engine settings robust; do gcc $CF -DKS_TEST tests/${t}_test.c $E -o vst/build/device/${t}_test; done
     gcc $CF tests/rt_test.c $E -o vst/build/device/rt_test'

@@ -1,7 +1,8 @@
 /* The production build (no KS_TEST: process() never waits for the worker, it skips a frame instead), fed at four
  * times real time while a second thread does what the wrapper's UI does: reads every readout and light at 100 Hz
  * and taps the wheel. Checks the key is still found, and how long process() takes against the 2.9 ms a 128-frame
- * block lasts. vst/test.sh builds it twice, with ASan/UBSan and with TSan (races between audio, worker and UI). */
+ * block lasts. A third thread plays the same chords as MIDI, as the sequencer port's reader does (the production
+ * build also opens a real port where the machine has a sequencer). vst/test.sh builds it twice, with ASan/UBSan and with TSan (races between audio, worker and UI). */
 #include "play.h"
 #include <pthread.h>
 #include <stdatomic.h>
@@ -13,7 +14,7 @@ static atomic_int stop;
 static void *ui(void *inst) {
     static const char *keys[] = {"key_name", "key_info", "scale_notes", "chord", "trail", "tuning_read", "loudest",
                                  "outside", "status", "cand_1", "cand_1_on", "note_5", "note_5_on", "ring_3_1",
-                                 "ring_3_1_on", "log_1", "state"};
+                                 "ring_3_1_on", "log_1", "state", "midi_in"};
     char buf[256];
     for (int n = 0; !atomic_load(&stop); n++) {
         for (unsigned i = 0; i < sizeof keys / sizeof *keys; i++) E->get_param(inst, keys[i], buf, sizeof buf);
@@ -21,6 +22,20 @@ static void *ui(void *inst) {
         if (n % 50 == 26) set(inst, "ring_9_1", "0");   /* ...and back to AUTO */
         if (n % 100 == 60) { set(inst, "notation", n % 200 ? "1" : "0"); set(inst, "chords", n % 200 ? "1" : "0"); }
         usleep(10000);
+    }
+    return NULL;
+}
+
+static void *port(void *inst) {   /* G C D G as MIDI, a chord every 250 ms, with the pedal now and then */
+    static const int ch[4][3] = {{55, 59, 62}, {48, 52, 55}, {50, 54, 57}, {55, 59, 62}};
+    for (int n = 0; !atomic_load(&stop); n++) {
+        const int *c = ch[n % 4];
+        uint8_t m[3];
+        for (int i = 0; i < 3; i++) { m[0] = 0x90; m[1] = (uint8_t)c[i]; m[2] = 90; E->midi(inst, m, 3); }
+        if (n % 8 == 3) { m[0] = 0xB0; m[1] = 64; m[2] = 127; E->midi(inst, m, 3); }
+        usleep(250000 / SPEED);
+        for (int i = 0; i < 3; i++) { m[0] = 0x80; m[1] = (uint8_t)c[i]; m[2] = 0; E->midi(inst, m, 3); }
+        if (n % 8 == 4) { m[0] = 0xB0; m[1] = 64; m[2] = 0; E->midi(inst, m, 3); }
     }
     return NULL;
 }
@@ -36,8 +51,9 @@ static int cmp(const void *a, const void *b) { double x = *(const double *)a, y 
 int main(void) {
     E = mpc_engine();
     void *a = E->create(NULL);
-    pthread_t th;
+    pthread_t th, th2;
     pthread_create(&th, NULL, ui, a);
+    pthread_create(&th2, NULL, port, a);
 
     /* G major, I IV V I (held chords at one level: I V vi IV would be as much E minor), 6 rounds of 1 s chords */
     const int blocks = 24 * KS_SR / 128;
@@ -69,6 +85,8 @@ int main(void) {
     usleep(100000);
     atomic_store(&stop, 1);
     pthread_join(th, NULL);
+    pthread_join(th2, NULL);
+    printf("MIDI port: %s\n", get(a, "midi_in"));
 
     set(a, "lock", "0");
     CHECK(!differs, "the output differs from the input");

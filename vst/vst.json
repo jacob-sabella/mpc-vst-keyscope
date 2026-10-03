@@ -12,14 +12,16 @@
     "root": "..",
     "sources": [
       "src/keyscope.c",
-      "src/analyzer.c"
+      "src/analyzer.c",
+      "src/seq_in.c"
     ],
     "cflags": [
       "-Isrc"
     ],
     "libs": [
       "-lm",
-      "-lpthread"
+      "-lpthread",
+      "-ldl"
     ]
   }
 }
