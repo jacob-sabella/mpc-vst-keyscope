@@ -1,5 +1,5 @@
 /* Every setting through the plugin's own entry points, on synthesized audio: MEMORY, PROFILE, RANGE, CHORDS,
- * TUNING, NOTATION, GATE, the key-change log and the wheel for a minor key. Built by vst/test.sh with -DKS_TEST. */
+ * TUNING, NOTATION, GATE, the key-change log, the wheel for a minor key and ANIMATION. Built by vst/test.sh with -DKS_TEST. */
 #include "play.h"
 
 static void *fresh(void) { return E->create(NULL); }
@@ -144,6 +144,34 @@ int main(int argc, char **argv) {
         CHECK(!strcmp(lit_ring(a), "1 2 12 13 14 24 "), "A minor lights: %s", lit_ring(a));
         set(a, "lock", "0");
         CHECK(!strcmp(lit_ring(a), ""), "no key, nothing lit: %s", lit_ring(a));
+        E->destroy(a);
+    }
+
+    /* ANIMATION: on by default, one grid frame at a time, 3 a second through all six; off shows none */
+    {
+        void *a = fresh();
+        static int16_t z[2 * 147];
+        char key[24];
+        int seen = 0, ok = 1;
+        CHECK(!strcmp(get(a, "anim"), "1"), "animation on by default: %s", get(a, "anim"));
+        for (int t = 0; t < 2 * 44100; t += 147) {   /* 2 s of silence, read every 147 frames */
+            int lit = 0, which = -1;
+            for (int k = 1; k <= 6; k++) {
+                snprintf(key, sizeof key, "bg_%d_on", k);
+                if (!strcmp(get(a, key), "1")) { lit++; which = k; }
+            }
+            ok &= lit == 1;
+            if (which > 0) seen |= 1 << which;
+            E->process(a, z, z, 147);
+        }
+        CHECK(ok, "exactly one grid frame shown at a time");
+        CHECK(seen == 0x7e, "all six frames shown in 2 s: mask %#x", seen);
+        set(a, "anim", "0");
+        for (int k = 1; k <= 6; k++) {
+            snprintf(key, sizeof key, "bg_%d_on", k);
+            CHECK(!strcmp(get(a, key), "0"), "animation off: %s is %s", key, get(a, key));
+        }
+        CHECK(strstr(get(a, "state"), "anim=0") != NULL, "anim saved: %s", get(a, "state"));
         E->destroy(a);
     }
 

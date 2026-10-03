@@ -2,7 +2,8 @@
 """Keyscope's page backgrounds, drawn as SVG: a synthwave sunset (starry sky, a striped sun, a neon grid floor
 running to the horizon) with the circle of fifths drawn into the sun on the KEY page.
 
-    python3 vst/art/gen.py      # writes vst/art/wheel.svg and vst/art/scene.svg
+    python3 vst/art/gen.py      # writes vst/art/wheel.svg and vst/art/scene.svg, and their animation frames
+                                # vst/art/wheel_1..6.svg and scene_1..6.svg (the floor band only)
 
 The plugin area is 1280 x 628; layout y = svg y + 84. The wheel's geometry must match the ring tiles in
 vst/layout.conf (WHEEL_* below are the same numbers)."""
@@ -10,6 +11,9 @@ import math, os, random
 
 W, H, Y_OFF = 1280, 628, 84
 HORIZON = 476                          # layout y 560
+BAND_Y = HORIZON - 14                  # animation frames cover y 462 down (layout y 546, height 166)
+N_FRAMES = 6                           # the engine's NUM_BG: bg_1..bg_6 show <page>_1..6.svg in turn
+PX = 4                                 # the grid's pixel size
 WHEEL_CX, WHEEL_CY = 330, 398 - Y_OFF  # layout (330, 398)
 R_OUT, R_IN = 250, 160                 # ring tile centres
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -79,22 +83,29 @@ def mountains(x0, x1, seed, peak):
             f'<path d="{d}" fill="none" stroke="{PINK}" stroke-width="1.6" stroke-opacity="0.75" filter="url(#glow)"/>')
 
 
-def floor():
+def floor(phase=0.0):
+    """The grid, drawn as 4 px blocks (pixel art), its rows moved towards the viewer by phase (0-1: one row's
+    travel, so frame N_FRAMES follows on from frame 0 seamlessly)."""
+    def block(x0, x1, y):   # one block row of a line, x0..x1 snapped to the pixel grid
+        a, b = math.floor(min(x0, x1) / PX) * PX, math.ceil(max(x0, x1) / PX) * PX
+        return f'<rect x="{a}" y="{y}" width="{max(b - a, PX)}" height="{PX}"/>'
     out = [f'<rect x="0" y="{HORIZON}" width="{W}" height="{H - HORIZON}" fill="url(#floor)"/>', '<g mask="url(#gridmask)" '
-           f'stroke="{PINK}" stroke-width="1.4" filter="url(#glow)">']
-    vx = W / 2
+           f'fill="{PINK}" filter="url(#glow)">']
+    vx, top = W / 2, HORIZON + PX
     for i in range(-24, 25):   # lines to the vanishing point
-        out.append(f'<line x1="{vx + i * 18:.1f}" y1="{HORIZON}" x2="{vx + i * 150:.1f}" y2="{H}"/>')
-    z = 1.0
+        x_at = lambda y: vx + i * 18 + (y - HORIZON) / (H - HORIZON) * i * 132
+        out += [block(x_at(y), x_at(y + PX), y) for y in range(top, H, PX)
+                if -PX < x_at(y) < W + PX or -PX < x_at(y + PX) < W + PX]
+    z, rows = 1.0 - 0.6 * phase, set()
     while True:                # rows: evenly spaced on the ground, closer together towards the horizon
         y = HORIZON + 900 / (z * 9)
-        if y > H:
-            z += 0.6
-            continue
-        out.append(f'<line x1="0" y1="{y:.1f}" x2="{W}" y2="{y:.1f}"/>')
         z += 0.6
-        if y - HORIZON < 3:
+        if y > H:
+            continue
+        if y - HORIZON < PX:
             break
+        rows.add(round(y / PX) * PX)   # rows near the horizon fall on the same pixel row
+    out += [f'<rect x="0" y="{y}" width="{W}" height="{PX}"/>' for y in sorted(rows)]
     out.append("</g>")
     out.append(f'<rect x="0" y="{HORIZON - 14}" width="{W}" height="28" fill="url(#fog)"/>')
     out.append(f'<line x1="0" y1="{HORIZON}" x2="{W}" y2="{HORIZON}" stroke="#ffd0f6" stroke-width="1.5" filter="url(#glow)"/>')
@@ -119,17 +130,21 @@ def wheel():
     return "\n".join(out)
 
 
-def page(body):
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">\n'
+def page(body, y0=0):
+    """The page, or (y0 > 0) only its band from y0 down: an animation frame."""
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H - y0}" viewBox="0 {y0} {W} {H - y0}">\n'
             f'{defs()}\n{body}\n</svg>\n')
 
 
 def main():
-    wheel_page = "\n".join([sky(5), sun(WHEEL_CX, WHEEL_CY, R_OUT + 36, 0.85), mountains(640, W, 3, 120), floor(), wheel()])
-    scene_page = "\n".join([sky(9), sun(W // 2, HORIZON - 40, 210, 0.9), mountains(0, 470, 4, 150), mountains(810, W, 6, 150),
-                            floor()])
-    for name, svg in (("wheel.svg", wheel_page), ("scene.svg", scene_page)):
-        open(os.path.join(HERE, name), "w").write(page(svg))
+    wheel_page = lambda ph: "\n".join([sky(5), sun(WHEEL_CX, WHEEL_CY, R_OUT + 36, 0.85), mountains(640, W, 3, 120),
+                                       floor(ph), wheel()])
+    scene_page = lambda ph: "\n".join([sky(9), sun(W // 2, HORIZON - 40, 210, 0.9), mountains(0, 470, 4, 150),
+                                       mountains(810, W, 6, 150), floor(ph)])
+    for name, draw in (("wheel", wheel_page), ("scene", scene_page)):
+        open(os.path.join(HERE, name + ".svg"), "w").write(page(draw(0.0)))
+        for k in range(N_FRAMES):   # the band from just above the horizon down, the grid one step further each
+            open(os.path.join(HERE, "%s_%d.svg" % (name, k + 1)), "w").write(page(draw(k / N_FRAMES), BAND_Y))
 
 
 if __name__ == "__main__":

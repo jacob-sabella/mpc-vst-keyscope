@@ -112,6 +112,15 @@
       "default": 0
     },
     {
+      "key": "anim",
+      "name": "Animation",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 1
+    },
+    {
       "key": "reset",
       "name": "Reset",
       "min": 0,
@@ -423,6 +432,66 @@
       "name": "Wheel Dm",
       "display": "string",
       "momentary": true
+    },
+    {
+      "key": "bg_1",
+      "name": "Grid frame 1",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_2",
+      "name": "Grid frame 2",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_3",
+      "name": "Grid frame 3",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_4",
+      "name": "Grid frame 4",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_5",
+      "name": "Grid frame 5",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_6",
+      "name": "Grid frame 6",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
     }
   ]
 }
