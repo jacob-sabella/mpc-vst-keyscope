@@ -62,9 +62,10 @@ A synthwave sunset: the wheel is drawn into a striped sun over a neon grid. `vst
 backgrounds as SVG (`vst/art/wheel.svg`, `vst/art/scene.svg`); the wheel's geometry there matches the ring tiles in
 `vst/layout.conf`. `vst/skin.css` styles the panels and controls.
 
-The grid is pixel art and slowly runs towards you: six frames of the floor band (`vst/art/wheel_1..6.svg`,
-`scene_1..6.svg`), three a second. The engine lights one of the hidden `bg_1`..`bg_6` parameters at a time and the
-skin shows that frame's picture. ANIMATION on the SETUP page turns it off (on by default) and leaves the still page.
+Behind it, two mountain ridges slide past (the far one at half speed): sixteen frames of the mountain band
+(`vst/art/wheel_1..16.svg`, `scene_1..16.svg`), three a second, looping seamlessly. The engine lights one of the
+hidden `bg_1`..`bg_16` parameters at a time and the skin shows that frame's picture. ANIMATION on the SETUP page turns
+it off (on by default) and leaves the still page.
 
 ## Building
 

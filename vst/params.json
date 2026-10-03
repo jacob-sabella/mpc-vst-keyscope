@@ -435,7 +435,7 @@
     },
     {
       "key": "bg_1",
-      "name": "Grid frame 1",
+      "name": "Scroll frame 1",
       "display": "string",
       "options": [
         "Off",
@@ -445,7 +445,7 @@
     },
     {
       "key": "bg_2",
-      "name": "Grid frame 2",
+      "name": "Scroll frame 2",
       "display": "string",
       "options": [
         "Off",
@@ -455,7 +455,7 @@
     },
     {
       "key": "bg_3",
-      "name": "Grid frame 3",
+      "name": "Scroll frame 3",
       "display": "string",
       "options": [
         "Off",
@@ -465,7 +465,7 @@
     },
     {
       "key": "bg_4",
-      "name": "Grid frame 4",
+      "name": "Scroll frame 4",
       "display": "string",
       "options": [
         "Off",
@@ -475,7 +475,7 @@
     },
     {
       "key": "bg_5",
-      "name": "Grid frame 5",
+      "name": "Scroll frame 5",
       "display": "string",
       "options": [
         "Off",
@@ -485,7 +485,107 @@
     },
     {
       "key": "bg_6",
-      "name": "Grid frame 6",
+      "name": "Scroll frame 6",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_7",
+      "name": "Scroll frame 7",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_8",
+      "name": "Scroll frame 8",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_9",
+      "name": "Scroll frame 9",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_10",
+      "name": "Scroll frame 10",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_11",
+      "name": "Scroll frame 11",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_12",
+      "name": "Scroll frame 12",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_13",
+      "name": "Scroll frame 13",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_14",
+      "name": "Scroll frame 14",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_15",
+      "name": "Scroll frame 15",
+      "display": "string",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 0
+    },
+    {
+      "key": "bg_16",
+      "name": "Scroll frame 16",
       "display": "string",
       "options": [
         "Off",

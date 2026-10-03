@@ -147,16 +147,16 @@ int main(int argc, char **argv) {
         E->destroy(a);
     }
 
-    /* ANIMATION: on by default, one grid frame at a time, 3 a second through all six; off shows none */
+    /* ANIMATION: on by default, one frame at a time, 3 a second through all sixteen; off shows none */
     {
         void *a = fresh();
         static int16_t z[2 * 147];
         char key[24];
         int seen = 0, ok = 1;
         CHECK(!strcmp(get(a, "anim"), "1"), "animation on by default: %s", get(a, "anim"));
-        for (int t = 0; t < 2 * 44100; t += 147) {   /* 2 s of silence, read every 147 frames */
+        for (int t = 0; t < 6 * 44100; t += 147) {   /* 6 s of silence, read every 147 frames */
             int lit = 0, which = -1;
-            for (int k = 1; k <= 6; k++) {
+            for (int k = 1; k <= 16; k++) {
                 snprintf(key, sizeof key, "bg_%d_on", k);
                 if (!strcmp(get(a, key), "1")) { lit++; which = k; }
             }
@@ -164,10 +164,10 @@ int main(int argc, char **argv) {
             if (which > 0) seen |= 1 << which;
             E->process(a, z, z, 147);
         }
-        CHECK(ok, "exactly one grid frame shown at a time");
-        CHECK(seen == 0x7e, "all six frames shown in 2 s: mask %#x", seen);
+        CHECK(ok, "exactly one frame shown at a time");
+        CHECK(seen == 0x1fffe, "all sixteen frames shown in 6 s: mask %#x", seen);
         set(a, "anim", "0");
-        for (int k = 1; k <= 6; k++) {
+        for (int k = 1; k <= 16; k++) {
             snprintf(key, sizeof key, "bg_%d_on", k);
             CHECK(!strcmp(get(a, key), "0"), "animation off: %s is %s", key, get(a, key));
         }

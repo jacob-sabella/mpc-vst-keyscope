@@ -30,11 +30,11 @@ static const struct { const char *key; int min, max, def; } PDEF[NUM_P] = {
     {"notation", 0, 2, 0},    /* auto, sharps, flats */
     {"gate", -80, -20, -55},
     {"hold", 0, 1, 0},
-    {"anim", 0, 1, 1},       /* the moving grid behind the pages */
+    {"anim", 0, 1, 1},       /* the mountains moving behind the pages */
 };
 #define NUM_CAND 3
 #define NUM_RING 24   /* the circle of fifths: ring_1..12 the major keys clockwise from C, ring_13..24 their relative minors */
-#define NUM_BG 6      /* the grid's animation frames, bg_1..bg_6 (vst/art/gen.py draws them) */
+#define NUM_BG 16     /* the mountains' animation frames, bg_1..bg_16 (vst/art/gen.py draws them) */
 #define BG_FRAMES 14700   /* audio frames per animation frame: 3 a second */
 #define TEXT_MAX 47   /* the wrapper shows a readout's first 47 characters */
 
