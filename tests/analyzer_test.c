@@ -96,6 +96,14 @@ static void run(ks_t *k, const buf_t *b) {
     }
 }
 
+/* MIDI: the notes held (MIDI numbers, velocity 100) for secs, one frame every KS_HOP; audio is the frame given */
+static void hold_notes(ks_t *k, const int *notes, int n, float secs, const float *audio) {
+    static float zero[KS_N];
+    memset(k->midi, 0, sizeof k->midi);
+    for (int i = 0; i < n; i++) k->midi[notes[i]] = 0.4f + 0.6f * 100 / 127.0f;
+    for (int f = 0; f < (int)(secs * KS_FS / KS_HOP); f++) ks_frame(k, audio ? audio : zero);
+}
+
 static const int MAJ[3] = {0, 4, 7}, MIN[3] = {0, 3, 7}, DOM7[4] = {0, 4, 7, 10}, MAJ7[4] = {0, 4, 7, 11};
 
 /* I V vi IV, four bars each, twice */
@@ -256,6 +264,69 @@ int main(int argc, char **argv) {
         CHECK(k->key < 0 && k->chord.root < 0, "under the gate: no key, no chord");
         free(k);
         free(b.x);
+    }
+
+    /* MIDI: a progression in D major played as notes, no audio; the chords, the slash chord, the key */
+    {
+        ks_t *k = malloc(sizeof *k);
+        char got[32];
+        ks_init(k);
+        k->source = SRC_MIDI;
+        static const int D[] = {50, 62, 66, 69}, G[] = {43, 62, 67, 71}, A[] = {45, 61, 64, 69}, Bm[] = {47, 62, 66, 71},
+                         Em[] = {40, 64, 67, 71};
+        for (int r = 0; r < 3; r++) {
+            hold_notes(k, D, 4, 2, NULL);
+            hold_notes(k, G, 4, 2, NULL);
+            hold_notes(k, Em, 4, 2, NULL);
+            hold_notes(k, A, 4, 2, NULL);
+        }
+        chord_name(k->chord, got);
+        CHECK(!strcmp(got, "A"), "MIDI: the last chord is A (%s)", got);
+        CHECK(k->key == 2, "MIDI: D Major (%s)", ks_key_name(k->key));
+        CHECK(k->midi_now && !k->audio_now && k->midi_notes == 4, "MIDI: 4 notes, no audio (%d %d %d)", k->midi_now, k->audio_now, k->midi_notes);
+        static const int D_over_Fs[] = {42, 62, 66, 69};
+        hold_notes(k, D_over_Fs, 4, 1, NULL);
+        chord_name(k->chord, got);
+        CHECK(!strcmp(got, "D/F#"), "MIDI: the lowest note is the bass (%s)", got);
+        hold_notes(k, Bm, 4, 1, NULL);
+        hold_notes(k, NULL, 0, 2, NULL);
+        CHECK(!k->voiced_now && k->chord.root < 0 && k->key == 2, "MIDI: notes off, the chord clears and the key stays");
+
+        /* RANGE BASS reads only the notes under 300 Hz */
+        k->range = RANGE_BASS;
+        static const int high[] = {72, 76, 79};
+        hold_notes(k, high, 3, 0.2f, NULL);
+        CHECK(!k->midi_now && k->midi_notes == 0, "RANGE BASS leaves out notes above 300 Hz (%d)", k->midi_notes);
+        k->range = RANGE_FULL;
+        static const int extremes[] = {21, 108};
+        hold_notes(k, extremes, 2, 0.2f, NULL);
+        CHECK(k->midi_notes == 2, "RANGE FULL takes every MIDI note, A0 to C8 (%d)", k->midi_notes);
+        free(k);
+    }
+
+    /* SOURCE: MIDI ignores the audio, AUDIO ignores MIDI, BOTH hears either */
+    {
+        ks_t *k = malloc(sizeof *k);
+        static float tone[KS_N];
+        for (int i = 0; i < KS_N; i++) tone[i] = 0.3f * sinf(2 * (float)M_PI * 440.0f * i / KS_FS);   /* A4 */
+        static const int C_maj[] = {48, 60, 64, 67};
+        ks_init(k);
+        k->source = SRC_MIDI;
+        hold_notes(k, C_maj, 4, 1, tone);
+        CHECK(!k->audio_now && k->fast_chroma[9] < 0.01f && k->chord.root == 0, "SOURCE MIDI: the A4 tone counts for nothing");
+        ks_init(k);
+        k->source = SRC_AUDIO;
+        hold_notes(k, C_maj, 4, 1, NULL);
+        CHECK(!k->voiced_now && !k->midi_now && k->chord.root < 0, "SOURCE AUDIO: MIDI counts for nothing");
+        ks_init(k);
+        k->source = SRC_BOTH;
+        hold_notes(k, C_maj, 4, 1, NULL);
+        CHECK(k->midi_now && k->chord.root == 0, "SOURCE BOTH, MIDI only: C (%d)", k->chord.root);
+        hold_notes(k, C_maj, 4, 1, tone);
+        CHECK(k->midi_now && k->audio_now, "SOURCE BOTH: both heard");
+        CHECK(k->fast_chroma[9] > 0.2f && k->fast_chroma[0] > 0.05f, "SOURCE BOTH: half each (A %.2f, C %.2f)", k->fast_chroma[9], k->fast_chroma[0]);
+        CHECK(k->audio_frames > 0, "the tuning has audio to read");
+        free(k);
     }
 
     /* spelling helpers */

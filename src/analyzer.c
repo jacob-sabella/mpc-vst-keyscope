@@ -148,7 +148,7 @@ void ks_reset(ks_t *k) {
     memset(k->key_score, 0, sizeof k->key_score);
     k->tune_c = k->tune_s = 0;
     k->tuning_cents = 0;
-    k->frames = k->voiced = k->quiet_run = 0;
+    k->frames = k->voiced = k->quiet_run = k->audio_frames = 0;
     k->level_db = -120.0f;
     k->top[0] = k->top[1] = k->top[2] = -1;
     k->key = k->key_lead = -1;
@@ -157,7 +157,7 @@ void ks_reset(ks_t *k) {
     k->chord_cand_frames = 0;
     k->ntrail = k->nlog = 0;
     k->loud_hz = 0;
-    k->voiced_now = 0;
+    k->voiced_now = k->audio_now = k->midi_now = k->midi_notes = 0;
     k->npk = 0;
 }
 
@@ -270,6 +270,28 @@ static void chroma(ks_t *k, float *bass) {
     }
 }
 
+/* this frame's MIDI notes in RANGE (FULL: every note) as a chroma (a pitch class weighs its loudest note), and the lowest under BASS_MAX_HZ as the bass;
+ * returns how many there are. loud: the frequency of the strongest. */
+static int midi_chroma(ks_t *k, float *ch, float *bass, float *loud) {
+    float lo = RANGE_LO[k->range], hi = RANGE_HI[k->range], top = 0;
+    int n = 0, low = -1;
+    memset(ch, 0, sizeof(float) * 12);
+    memset(bass, 0, sizeof(float) * 12);
+    *loud = 0;
+    for (int m = 0; m < 128; m++) {
+        float w = k->midi[m];
+        if (!(w > 0)) continue;
+        float f = 440.0f * powf(2.0f, (m - 69) / 12.0f);
+        if (k->range != RANGE_FULL && (f < lo || f > hi)) continue;
+        ch[m % 12] = fmaxf(ch[m % 12], fminf(w, 1.0f));   /* once per pitch class: a doubled root is no louder */
+        if (low < 0 && f <= BASS_MAX_HZ) low = m;
+        if (w > top) { top = w; *loud = f; }
+        n++;
+    }
+    if (low >= 0) bass[low % 12] = 1.0f;
+    return n;
+}
+
 static float pearson(const float *x, const float *y) {
     float sx = 0, sy = 0, sxy = 0, sx2 = 0, sy2 = 0;
     for (int i = 0; i < 12; i++) { sx += x[i]; sy += y[i]; sxy += x[i] * y[i]; sx2 += x[i] * x[i]; sy2 += y[i] * y[i]; }
@@ -358,33 +380,50 @@ static void detect_chord(ks_t *k) {
 
 void ks_frame(ks_t *k, const float *x) {
     double e = 0;
-    for (int i = 0; i < KS_N; i++) {
-        k->re[i] = x[i] * k->win[i];
-        k->im[i] = 0;
-        e += (double)x[i] * x[i];
-    }
+    for (int i = 0; i < KS_N; i++) e += (double)x[i] * x[i];
     k->frames++;
     k->level_db = e > 0 ? (float)(10.0 * log10(e / KS_N * 2.0)) : -120.0f;   /* a full-scale sine reads 0 dB */
-    k->voiced_now = k->level_db >= k->gate_db;
     float fd = decay(FAST_TAU), cd = decay(CHORD_TAU), bd = decay(BASS_TAU);
     float kd = MEMORY_S[k->memory] > 0 ? decay(MEMORY_S[k->memory]) : 1.0f;
-    float bass[12];
+    float bass[12], mch[12], mbass[12], mloud;
+    float sum = 0, bsum = 0, msum = 0, mbsum = 0;
     k->loud_hz = 0;
-    if (k->voiced_now) {
+    k->audio_now = k->source != SRC_MIDI && k->level_db >= k->gate_db;
+    if (k->audio_now) {
+        for (int i = 0; i < KS_N; i++) {
+            k->re[i] = x[i] * k->win[i];
+            k->im[i] = 0;
+        }
         fft(k);
         find_peaks(k);
         update_tuning(k);
         chroma(k, bass);
-        float sum = 0, bsum = 0, la = 0;
+        float la = 0;
         for (int i = 0; i < 12; i++) { sum += k->frame_chroma[i]; bsum += bass[i]; }
         for (int i = 0; i < k->npk; i++) if (k->pk_a[i] > la) { la = k->pk_a[i]; k->loud_hz = k->pk_f[i]; }
-        if (sum <= 0) k->voiced_now = 0;
-        for (int i = 0; i < 12 && sum > 0; i++) {
-            float c = k->frame_chroma[i] / sum;   /* every voiced frame counts the same, loud or soft */
+        if (sum <= 0) k->audio_now = 0;
+        k->audio_frames += k->audio_now;
+    }
+    k->midi_notes = k->source != SRC_AUDIO ? midi_chroma(k, mch, mbass, &mloud) : 0;
+    k->midi_now = k->midi_notes > 0;
+    if (k->midi_now) {
+        for (int i = 0; i < 12; i++) { msum += mch[i]; mbsum += mbass[i]; }
+        if (!k->audio_now) k->loud_hz = mloud;
+    }
+    k->voiced_now = k->audio_now || k->midi_now;
+    if (k->voiced_now) {
+        /* each source normalised, so every voiced frame counts the same, loud or soft; with both, half each */
+        float aw = k->audio_now ? (k->midi_now ? 0.5f : 1.0f) : 0.0f, mw = k->midi_now ? 1.0f - aw : 0.0f;
+        int has_bass = (k->audio_now && bsum > 0) || (k->midi_now && mbsum > 0);
+        float bw_a = k->audio_now && bsum > 0 ? (k->midi_now && mbsum > 0 ? 0.5f : 1.0f) : 0.0f, bw_m = has_bass ? 1.0f - bw_a : 0.0f;
+        for (int i = 0; i < 12; i++) {
+            float c = (aw > 0 ? aw * k->frame_chroma[i] / sum : 0) + (mw > 0 ? mw * mch[i] / msum : 0);
+            float b = (bw_a > 0 ? bw_a * bass[i] / bsum : 0) + (bw_m > 0 ? bw_m * mbass[i] / mbsum : 0);
+            k->frame_chroma[i] = c;
             k->fast_chroma[i] = k->fast_chroma[i] * fd + c * (1 - fd);
             k->chord_chroma[i] = k->chord_chroma[i] * cd + c * (1 - cd);
             k->key_chroma[i] = k->key_chroma[i] * kd + c;
-            k->bass_chroma[i] = k->bass_chroma[i] * bd + (bsum > 0 ? bass[i] / bsum : 0) * (1 - bd);
+            k->bass_chroma[i] = k->bass_chroma[i] * bd + b * (1 - bd);
         }
     }
     if (k->voiced_now) {

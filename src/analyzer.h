@@ -11,7 +11,11 @@
  *     key    (MEMORY)  correlated with 24 rotated key profiles, the shown key changing only after the new
  *                      best has led for about 1.5 s,
  *     bass   (~0.35 s) peaks under 260 Hz, for slash chords.
- *   Frames quieter than the gate count for nothing. */
+ *   Frames quieter than the gate count for nothing.
+ *
+ * MIDI: the notes sounding during a frame (midi[], filled by the caller) make a chroma of their own, each note
+ * weighted by its velocity, the lowest note under 260 Hz the bass. SOURCE picks audio, MIDI or both; with both,
+ * each source that has something counts equally (normalised before they are averaged). MIDI only skips the FFT. */
 #pragma once
 #include <stdint.h>
 
@@ -29,6 +33,7 @@ enum { RANGE_FULL, RANGE_BASS, RANGE_MIDS, RANGE_HIGHS, RANGE_COUNT };
 enum { PROF_KRUMHANSL, PROF_TEMPERLEY, PROF_SIMPLE, PROF_COUNT };
 enum { CHORDS_TRIADS, CHORDS_SEVENTHS };
 enum { MEM_10S, MEM_30S, MEM_1MIN, MEM_SONG, MEM_COUNT };
+enum { SRC_BOTH, SRC_AUDIO, SRC_MIDI, SRC_COUNT };
 
 /* key index: root + 12 * minor (0-11 major, 12-23 minor); -1 = none */
 #define KEY_ROOT(k) ((k) % 12)
@@ -59,8 +64,11 @@ int ks_decim(ks_decim_t *d, const float *in, int n, float *out);
 
 typedef struct {
     /* settings (read once per frame) */
-    int range, profile, chords, auto_tune, memory;
+    int range, profile, chords, auto_tune, memory, source;
     float gate_db;
+
+    /* input: each MIDI note's weight this frame (0 = not sounding, else 0-1 from its velocity); the caller fills it */
+    float midi[128];
 
     /* state */
     float win[KS_N], re[KS_N], im[KS_N], cs[KS_N / 2], sn[KS_N / 2];
@@ -86,6 +94,9 @@ typedef struct {
     int log_key[KS_LOG], nlog;
     float loud_hz;                /* strongest peak this frame, 0 = none */
     int voiced_now;
+    int audio_now, midi_now;      /* which sources had something this frame */
+    int midi_notes;               /* MIDI notes sounding this frame (in RANGE) */
+    long audio_frames;            /* frames with audio over the gate since RESET (the tuning is read from these) */
 } ks_t;
 
 void ks_init(ks_t *k);
