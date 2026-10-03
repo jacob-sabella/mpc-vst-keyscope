@@ -112,15 +112,6 @@
       "default": 0
     },
     {
-      "key": "anim",
-      "name": "Animation",
-      "options": [
-        "Off",
-        "On"
-      ],
-      "default": 1
-    },
-    {
       "key": "reset",
       "name": "Reset",
       "min": 0,
@@ -432,6 +423,15 @@
       "name": "Wheel Dm",
       "display": "string",
       "momentary": true
+    },
+    {
+      "key": "anim",
+      "name": "Animation",
+      "options": [
+        "Off",
+        "On"
+      ],
+      "default": 1
     },
     {
       "key": "bg_1",
