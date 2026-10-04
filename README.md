@@ -98,11 +98,6 @@ block 8.3%, the analysis thread about 1% of a core: PASS.
 
 Needs Docker (with QEMU for arm32v7) and a checkout of
 [mpc-vst-plugins](https://github.com/sd88me/mpc-vst-plugins) next to this repo (or `MPC_VST=/path`).
-Until [mpc-vst-plugins#90](https://github.com/sd88me/mpc-vst-plugins/pull/90) is merged, use that pull
-request's branch (`qlink-travel` of [jacob-sabella/mpc-vst-plugins](https://github.com/jacob-sabella/mpc-vst-plugins)):
-Keyscope relies on its wrapper and skin changes (tiles lit from the engine, momentary tiles, 47-character readouts,
-`theme_tile_on`, `scale_names`). The wrapper's host test also needs the
-fork's `host-test-effect` fix to run an effect.
 
 ```sh
 vst/test.sh              # offline: detectors, engine, settings, bad input, the MIDI port, real time (ASan, TSan), host test
@@ -114,15 +109,15 @@ tests/device.sh <host>   # the engine tests built for armv7 and run on a device 
 
 ### Releasing
 
-`.github/workflows/release.yml` builds a draft release with mpc-vst-plugins' reusable workflow once that pull
-request is in (bump the pins in it and in `test.yml` to the merge commit). Until then, release by hand from the
-branch above, as mpc-vst-plugins' `docs/RELEASING.md` describes. Versions stay 0.x.y until it is merged.
+`.github/workflows/release.yml` builds a draft release with mpc-vst-plugins' reusable workflow
+(`workflow_dispatch`, pass a version). To release by hand instead, as mpc-vst-plugins' `docs/RELEASING.md`
+describes:
 
 ```sh
 B=vst/build; python3 $MPC_VST/tools/release.py --so $B/keyscope.so --skin "$B/skin/jacob-sabella - VST - Keyscope" \
-  --entry $B/pluginlist-entry.xml --version 0.2.0 --repo jacob-sabella/mpc-vst-keyscope --license MIT \
+  --entry $B/pluginlist-entry.xml --version 1.0.0 --repo jacob-sabella/mpc-vst-keyscope --license MIT \
   --bench vst/bench.txt -o dist
-python3 $MPC_VST/tools/catalog_check.py dist/Keyscope-0.2.0-mpc-armv7.zip --catalog --expect-id keyscope \
+python3 $MPC_VST/tools/catalog_check.py dist/Keyscope-1.0.0-mpc-armv7.zip --catalog --expect-id keyscope \
   --expect-repo jacob-sabella/mpc-vst-keyscope
 ```
 
