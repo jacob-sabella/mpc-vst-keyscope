@@ -443,5 +443,5 @@ static int get_param(void *inst, const char *key, char *buf, int len) {
     return 0;
 }
 
-static const mpc_engine_t ENGINE = {create, destroy, midi, set_param, get_param, render, process};
+static const mpc_engine_t ENGINE = {create, destroy, midi, set_param, get_param, render, process, NULL};
 const mpc_engine_t *mpc_engine(void) { return &ENGINE; }
