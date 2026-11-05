@@ -5,6 +5,10 @@
   "version": 1000,
   "so": "keyscope.so",
   "effect": true,
+  "targets": [
+    "armv7",
+    "aarch64"
+  ],
   "defines": {
     "PARAM_TEXT_MAX": 48
   },
