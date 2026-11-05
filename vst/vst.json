@@ -30,5 +30,51 @@
       "-lpthread",
       "-ldl"
     ]
+  },
+  "sample_page": {
+    "banks": [
+      {
+        "name": "KEY",
+        "knobs": [
+          "lock",
+          "hold",
+          "memory"
+        ]
+      },
+      {
+        "name": "SOUND",
+        "knobs": [
+          "source",
+          "range",
+          "gate"
+        ]
+      },
+      {
+        "name": "STYLE",
+        "knobs": [
+          "profile",
+          "chords",
+          "notation"
+        ]
+      }
+    ],
+    "lines": [
+      {
+        "key": "key_name",
+        "size": 3,
+        "color": "#ff2fa0"
+      },
+      {
+        "key": "chord",
+        "size": 2,
+        "label": true,
+        "color": "#22e6ff"
+      },
+      "key_info",
+      "scale_notes",
+      "tuning_read",
+      "status"
+    ],
+    "fps": 10
   }
 }
